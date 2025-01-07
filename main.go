@@ -34,6 +34,15 @@ func executeRequest(req *http.Request) (string, error) {
 	return string(body), nil
 }
 
+func ParseJson(body string) (map[string]interface{}, error) {
+	var result map[string]interface{}
+	err := json.Unmarshal([]byte(body), &result)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing JSON: %w", err)
+	}
+	return result, nil
+}
+
 func Get(url string, headers map[string]string) (string, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
