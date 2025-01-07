@@ -6,16 +6,184 @@ import (
 	"io/ioutil"
 	"net/http"
 	"encoding/json"
+	"github.com/bytedance/gopkg/lang/fastrand"
+	"golang.org/x/crypto/bcrypt"
+	"os"
+	"bufio"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
+
+
+var MongoClient *mongo.Client
+var clientLock sync.Mutex
+var once sync.Once
+
+func GetMongoClient() *mongo.Client {
+	clientLock.Lock()
+	defer clientLock.Unlock()
+	if MongoClient == nil || !IsMongoConnected(MongoClient) {
+		fmt.Println("MongoDB client is nil or disconnected. Reconnecting...")
+		once.Do(func() {
+			var err error
+			MongoClient, err = connectToMongo()
+			if err != nil {
+				fmt.Println("Failed to connect to MongoDB: %v", err)
+			}
+		})
+		if !IsMongoConnected(MongoClient) {
+			MongoClient.Disconnect(context.TODO())
+			MongoClient, _ = connectToMongo()
+		}
+	}
+	return MongoClient
+}
+
+func connectToMongo(URI string) (*mongo.Client, error) {
+	clientOpts := options.Client().ApplyURI(URI)
+	client, err := mongo.Connect(context.TODO(), clientOpts)
+	if err != nil {
+		return nil, err
+	}
+	err = client.Ping(context.TODO(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println("Connected to MongoDB!")
+	return client, nil
+}
+
+func IsMongoConnected(client *mongo.Client) bool {
+	err := client.Ping(context.TODO(), nil)
+	return err == nil
+}
+
+func Hash(input string) (string, error) {
+	hashedBytes, err := bcrypt.GenerateFromPassword([]byte("hvcjsfhavsfvsa"+input), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hashedBytes), nil
+}
+
+func ComparePassword(in1, in2 string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(in1), []byte("hvcjsfhavsfvsa"+in2))
+	return err == nil
+}
+
+func Randint(min, max int) int {
+	return min + int(fastrand.Uint32n(uint32(max-min+1)))
+}
+
+func ReverseSlice(s []int) {
+    for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
+        s[i], s[j] = s[j], s[i]
+    }
+}
+
+type Readconfig struct {
+	LineByLine bool
+}
+
+func Readfile(filename string, args ...interface{}) (interface{}, error) {
+	config := Readconfig{LineByLine: false}
+
+	for _, arg := range args {
+		switch v := arg.(type) {
+		case Readconfig:
+			config = v
+		default:
+			return nil, fmt.Errorf("invalid argument type: %T", v)
+		}
+	}
+
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open file: %w", err)
+	}
+	defer file.Close()
+
+	if config.LineByLine {
+
+		var lines []string
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			lines = append(lines, scanner.Text())
+		}
+		if err := scanner.Err(); err != nil {
+			return nil, fmt.Errorf("error reading lines: %w", err)
+		}
+		return lines, nil
+	}
+
+	content, err := ioutil.ReadAll(file)
+	if err != nil {
+		return nil, fmt.Errorf("error reading file: %w", err)
+	}
+	return string(content), nil
+}
+
+func WriteFile(filename string, content string) error {
+	err := ioutil.WriteFile(filename, []byte(content), 0644)
+	if err != nil {
+		return fmt.Errorf("failed to write file: %w", err)
+	}
+	return nil
+}
+
+type Appendconfig struct {
+	Top bool
+	AddNewLine bool
+}
+
+func AppendFile(filename string, content string, args ...interface{}) error {
+	config := Appendconfig{Top: false, AddNewLine: true}
+	for _, arg := range args {
+		switch v := arg.(type) {
+		case Appendconfig:
+			config = v
+		default:
+			return fmt.Errorf("invalid argument type: %T", v)
+		}
+	}
+	fmt.Println(config)
+	
+	var existingContent string
+	data, err := Readfile(filename)
+	if err != nil {
+		return fmt.Errorf("failed to read file: %w", err)
+	}
+
+	existingContent = data.(string)
+	fmt.Println("exist: ",existingContent)
+
+	fmt.Println(existingContent)
+
+	var newContent string
+	if config.Top {
+		newContent = content + existingContent
+	} else {
+		newContent = existingContent + content
+	}
+	if config.AddNewLine {
+		newContent += "\n"
+	}
+	fmt.Println("new: ",newContent)
+	err = ioutil.WriteFile(filename, []byte(newContent), 0644)
+	if err != nil {
+		return fmt.Errorf("failed to write to file: %w", err)
+	}
+	return nil
+}
+
 
 func addHeaders(req *http.Request, headers map[string]string) {
 	for key, value := range headers {
 		req.Header.Set(key, value)
 	}
-}
-
-func Test() {
-	fmt.Println("Hello")
 }
 
 func executeRequest(req *http.Request) (string, error) {
@@ -187,4 +355,3 @@ func TraceJson(url string, headers map[string]string) (map[string]interface{}, e
 	}
 	return ParseJson(Body)
 }
-
