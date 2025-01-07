@@ -21,21 +21,22 @@ var MongoClient *mongo.Client
 var clientLock sync.Mutex
 var once sync.Once
 
-func GetMongoClient() *mongo.Client {
+func GetMongoClient(URI string) *mongo.Client {
 	clientLock.Lock()
 	defer clientLock.Unlock()
 	if MongoClient == nil || !IsMongoConnected(MongoClient) {
 		fmt.Println("MongoDB client is nil or disconnected. Reconnecting...")
 		once.Do(func() {
 			var err error
-			MongoClient, err = connectToMongo()
+			MongoClient, err = connectToMongo(URI)
 			if err != nil {
 				fmt.Println("Failed to connect to MongoDB: %v", err)
+				return nil
 			}
 		})
 		if !IsMongoConnected(MongoClient) {
 			MongoClient.Disconnect(context.TODO())
-			MongoClient, _ = connectToMongo()
+			MongoClient, _ = connectToMongo(URI)
 		}
 	}
 	return MongoClient
@@ -69,7 +70,7 @@ func Hash(input string) (string, error) {
 	return string(hashedBytes), nil
 }
 
-func ComparePassword(in1, in2 string) bool {
+func Comparehash(in1, in2 string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(in1), []byte("hvcjsfhavsfvsa"+in2))
 	return err == nil
 }
@@ -78,18 +79,18 @@ func Randint(min, max int) int {
 	return min + int(fastrand.Uint32n(uint32(max-min+1)))
 }
 
-func ReverseSlice(s []int) {
+func Reverseslice(s []int) {
     for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
         s[i], s[j] = s[j], s[i]
     }
 }
 
 type Readconfig struct {
-	LineByLine bool
+	Linebyline bool
 }
 
 func Readfile(filename string, args ...interface{}) (interface{}, error) {
-	config := Readconfig{LineByLine: false}
+	config := Readconfig{Linebyline: false}
 
 	for _, arg := range args {
 		switch v := arg.(type) {
@@ -106,7 +107,7 @@ func Readfile(filename string, args ...interface{}) (interface{}, error) {
 	}
 	defer file.Close()
 
-	if config.LineByLine {
+	if config.Linebyline {
 
 		var lines []string
 		scanner := bufio.NewScanner(file)
@@ -136,11 +137,11 @@ func WriteFile(filename string, content string) error {
 
 type Appendconfig struct {
 	Top bool
-	AddNewLine bool
+	Addnewline bool
 }
 
 func AppendFile(filename string, content string, args ...interface{}) error {
-	config := Appendconfig{Top: false, AddNewLine: true}
+	config := Appendconfig{Top: false, Addnewline: true}
 	for _, arg := range args {
 		switch v := arg.(type) {
 		case Appendconfig:
@@ -168,7 +169,7 @@ func AppendFile(filename string, content string, args ...interface{}) error {
 	} else {
 		newContent = existingContent + content
 	}
-	if config.AddNewLine {
+	if config.Addnewline {
 		newContent += "\n"
 	}
 	fmt.Println("new: ",newContent)
@@ -228,6 +229,8 @@ func Post(url string, data []byte, headers map[string]string) (string, error) {
 	addHeaders(req, headers)
 	return executeRequest(req)
 }
+
+
 
 func Put(url string, data []byte, headers map[string]string) (string, error) {
 	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(data))
