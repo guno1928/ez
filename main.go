@@ -114,7 +114,6 @@ func Trace(url string, headers map[string]string) (string, error) {
 	return executeRequest(req)
 }
 
-//now do this again but with dynamic json data and name it like GetJson, PostJson, etc i also want to return a json object
 
 func GetJson(url string, headers map[string]string) (map[string]interface{}, error) {
 	body, err := Get(url, headers)
