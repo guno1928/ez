@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"encoding/json"
 )
 
 func addHeaders(req *http.Request, headers map[string]string) {
@@ -112,3 +113,70 @@ func Trace(url string, headers map[string]string) (string, error) {
 	addHeaders(req, headers)
 	return executeRequest(req)
 }
+
+//now do this again but with dynamic json data and name it like GetJson, PostJson, etc i also want to return a json object
+
+func GetJson(url string, headers map[string]string) (map[string]interface{}, error) {
+	body, err := Get(url, headers)
+	if err != nil {
+		return nil, fmt.Errorf("error performing GET request: %w", err)
+	}
+	return ParseJson(body)
+}
+
+func PostJson(url string, data []byte, headers map[string]string) (map[string]interface{}, error) {
+	Body, err := Post(url, data, headers)
+	if err != nil {
+		return nil, fmt.Errorf("error performing POST request: %w", err)
+	}
+	return ParseJson(Body)
+}
+
+func PutJson(url string, data []byte, headers map[string]string) (map[string]interface{}, error) {
+	Body, err := Put(url, data, headers)
+	if err != nil {
+		return nil, fmt.Errorf("error performing PUT request: %w", err)
+	}
+	return ParseJson(Body)
+}
+
+func DeleteJson(url string, headers map[string]string) (map[string]interface{}, error) {
+	Body, err := Delete(url, headers)
+	if err != nil {
+		return nil, fmt.Errorf("error performing DELETE request: %w", err)
+	}
+	return ParseJson(Body)
+}
+
+func PatchJson(url string, data []byte, headers map[string]string) (map[string]interface{}, error) {
+	Body, err := Patch(url, data, headers)
+	if err != nil {
+		return nil, fmt.Errorf("error performing PATCH request: %w", err)
+	}
+	return ParseJson(Body)
+}
+
+func OptionsJson(url string, headers map[string]string) (map[string]interface{}, error) {
+	Body, err := Options(url, headers)
+	if err != nil {
+		return nil, fmt.Errorf("error performing OPTIONS request: %w", err)
+	}
+	return ParseJson(Body)
+}
+
+func HeadJson(url string, headers map[string]string) (map[string]interface{}, error) {
+	Body, err := Head(url, headers)
+	if err != nil {
+		return nil, fmt.Errorf("error performing HEAD request: %w", err)
+	}
+	return ParseJson(Body)
+}
+
+func TraceJson(url string, headers map[string]string) (map[string]interface{}, error) {
+	Body, err := Trace(url, headers)
+	if err != nil {
+		return nil, fmt.Errorf("error performing TRACE request: %w", err)
+	}
+	return ParseJson(Body)
+}
+
