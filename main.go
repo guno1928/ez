@@ -11,7 +11,7 @@ import (
 	"os"
 	"sync"
 	"bufio"
-	
+	"context"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -36,6 +36,7 @@ var (
 	_ = mongo.Client{}
 	_ = options.ClientOptions{}
 	_ = readpref.Primary()
+	_ = context.TODO()
 )
 
 var MongoClient *mongo.Client
