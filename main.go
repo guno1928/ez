@@ -1,21 +1,42 @@
 package easynet
 
 import (
-	_ "bytes"
-	_ "fmt"
-	_ "io/ioutil"
-	_ "net/http"
-	_ "encoding/json"
-	_ "github.com/bytedance/gopkg/lang/fastrand"
-	_ "golang.org/x/crypto/bcrypt"
-	_ "os"
-	_ "bufio"
-	_ "go.mongodb.org/mongo-driver/bson"
-	_ "go.mongodb.org/mongo-driver/bson/primitive"
-	_ "go.mongodb.org/mongo-driver/mongo"
-	_ "go.mongodb.org/mongo-driver/mongo/options"
+	"bytes"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"encoding/json"
+	"github.com/bytedance/gopkg/lang/fastrand"
+	"golang.org/x/crypto/bcrypt"
+	"os"
+	"sync"
+	"bufio"
+	
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
+var (
+	_ = bytes.Buffer{}
+	_ = fmt.Sprintf("")
+	_ = ioutil.ReadFile
+	_ = http.Client{}
+	_ = json.Marshal
+	_ = fastrand.Uint32()
+	_ = bcrypt.GenerateFromPassword
+	_ = os.Getenv("")
+	_ = sync.Mutex{}
+	_ = bufio.NewReader
+
+	_ = bson.M{}
+	_ = primitive.ObjectID{}
+	_ = mongo.Client{}
+	_ = options.ClientOptions{}
+	_ = readpref.Primary()
+)
 
 var MongoClient *mongo.Client
 var clientLock sync.Mutex
