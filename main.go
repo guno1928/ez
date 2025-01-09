@@ -1,19 +1,19 @@
 package easynet
 
 import (
-	"bytes"
-	"fmt"
-	"io/ioutil"
-	"net/http"
-	"encoding/json"
-	"github.com/bytedance/gopkg/lang/fastrand"
-	"golang.org/x/crypto/bcrypt"
-	"os"
-	"bufio"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	_ "bytes"
+	_ "fmt"
+	_ "io/ioutil"
+	_ "net/http"
+	_ "encoding/json"
+	_ "github.com/bytedance/gopkg/lang/fastrand"
+	_ "golang.org/x/crypto/bcrypt"
+	_ "os"
+	_ "bufio"
+	_ "go.mongodb.org/mongo-driver/bson"
+	_ "go.mongodb.org/mongo-driver/bson/primitive"
+	_ "go.mongodb.org/mongo-driver/mongo"
+	_ "go.mongodb.org/mongo-driver/mongo/options"
 )
 
 
