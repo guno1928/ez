@@ -24,6 +24,8 @@ ez.Mongoupdate_one
 ez.Mongoupdate_many
 ez.Mongofine_one
 ez.Mongofind_many
+ez.Mongodel_one
+ez.Mongodel_many
 
 filter := bson.D{{"email", "emailhere"}}
 update := bson.D{{"$set", bson.D{{"commission", 10}}}}
