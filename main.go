@@ -84,6 +84,54 @@ func IsMongoConnected(client *mongo.Client) bool {
 	return err == nil
 }
 
+func Mongoupdate_one(client *mongo.Client, mydb string, mycollection string, filter bson.D, update bson.D) error {
+	collection := client.Database(mydb).Collection(mycollection)
+	_, err := collection.UpdateOne(context.Background(), filter, update)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func Mongoupdate_many(client *mongo.Client, mydb string, mycollection string, filter bson.D, update bson.D) error {
+	collection := client.Database(mydb).Collection(mycollection)
+	_, err := collection.UpdateMany(context.Background(), filter, update)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func Mongofind_one(client *mongo.Client, mydb string, mycollection string, filter bson.D) (map[string]interface{}, error) {
+	collection := client.Database(mydb).Collection(mycollection)
+	var result map[string]interface{}
+	err := collection.FindOne(context.Background(), filter).Decode(&result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func Mongofind_many(client *mongo.Client, mydb string, mycollection string, filter bson.D) ([]map[string]interface{}, error) {
+	collection := client.Database(mydb).Collection(mycollection)
+	cur, err := collection.Find(context.Background(), filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cur.Close(context.Background())
+
+	var results []map[string]interface{}
+	for cur.Next(context.Background()) {
+		var result map[string]interface{}
+		err := cur.Decode(&result)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, result)
+	}
+	return results, nil
+}
+
 func Hash(input string) (string, error) {
 	hashedBytes, err := bcrypt.GenerateFromPassword([]byte("hvcjsfhavsfvsa"+input), bcrypt.DefaultCost)
 	if err != nil {
