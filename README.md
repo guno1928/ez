@@ -18,6 +18,29 @@ Mongo client
 ```go
 client := ez.GetMongoClient("mongodb://localhost:27017")
 collection := client.Database("testdb").Collection("testcollection")
+
+funcs
+ez.Mongoupdate_one
+ez.Mongoupdate_many
+ez.Mongofine_one
+ez.Mongofind_many
+
+filter := bson.D{{"email", "emailhere"}}
+update := bson.D{{"$set", bson.D{{"commission", 10}}}}
+temp := ez.Mongoupdate_one(client, "aloscdn", "alosusers", filter, update)
+if temp != nil {
+    fmt.Println(temp)
+}
+fmt.Println(temp, temp["_id"])
+
+filter = bson.D{{"email", "emailhere"}}
+result, err := Mongofind_one(client, "aloscdn", "alosusers", filter)
+if err != nil {
+    fmt.Println(err)
+}
+fmt.Println(result)
+fmt.Println(result["commission"])
+
 etc code here
    ```
 
