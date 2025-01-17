@@ -132,6 +132,25 @@ func Mongofind_many(client *mongo.Client, mydb string, mycollection string, filt
 	return results, nil
 }
 
+func Mongodel_one(client *mongo.Client, mydb string, mycollection string, filter bson.D) error {
+	collection := client.Database(mydb).Collection(mycollection)
+	_, err := collection.DeleteOne(context.Background(), filter)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func Mongodel_many(client *mongo.Client, mydb string, mycollection string, filter bson.D) error {
+	collection := client.Database(mydb).Collection(mycollection)
+	_, err := collection.DeleteMany(context.Background(), filter)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+
 func Hash(input string) (string, error) {
 	hashedBytes, err := bcrypt.GenerateFromPassword([]byte("hvcjsfhavsfvsa"+input), bcrypt.DefaultCost)
 	if err != nil {
@@ -354,6 +373,7 @@ func Head(url string, headers map[string]string) (string, error) {
 
 	return resp.Status, nil
 }
+
 
 func Trace(url string, headers map[string]string) (string, error) {
 	req, err := http.NewRequest("TRACE", url, nil)
