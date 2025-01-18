@@ -62,6 +62,9 @@ if compare {
 Randint (fastest version)
 ```go
 number := ez.Randint(1,10)
+number2 := ez.Randint64(1,10)
+float := ez.Randfloat(1.0, 10.0)
+float2 := ez.Randfloat64(1.0, 10.0)
 ```
 
 Slice reversing 
