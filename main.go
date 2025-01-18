@@ -168,6 +168,21 @@ func Randint(min, max int) int {
 	return min + int(fastrand.Uint32n(uint32(max-min+1)))
 }
 
+func Randint64(min, max int) int {
+	return min + int(fastrand.Uint64n(uint64(max-min+1)))
+}
+
+func Randfloat(min, max float32) float32 {
+	return min + fastrand.Float32()*(max-min)
+}
+
+
+func Randfloat64(min, max float64) float64 {
+	return min + fastrand.Float64()*(max-min)
+}
+
+
+
 func Reverseslice(s []int) {
     for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
         s[i], s[j] = s[j], s[i]
