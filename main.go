@@ -188,21 +188,10 @@ func Reverseslice(s []int) {
     }
 }
 
-type Readconfig struct {
-	Linebyline bool
-}
 
-func Readfile(filename string, args ...interface{}) (interface{}, error) {
-	config := Readconfig{Linebyline: false}
 
-	for _, arg := range args {
-		switch v := arg.(type) {
-		case Readconfig:
-			config = v
-		default:
-			return nil, fmt.Errorf("invalid argument type: %T", v)
-		}
-	}
+func Readfile(filename string, Linebyline bool) (interface{}, error) {
+
 
 	file, err := os.Open(filename)
 	if err != nil {
@@ -210,7 +199,7 @@ func Readfile(filename string, args ...interface{}) (interface{}, error) {
 	}
 	defer file.Close()
 
-	if config.Linebyline {
+	if Linebyline {
 
 		var lines []string
 		scanner := bufio.NewScanner(file)
@@ -238,22 +227,10 @@ func WriteFile(filename string, content string) error {
 	return nil
 }
 
-type Appendconfig struct {
-	Top bool
-	Addnewline bool
-}
 
-func AppendFile(filename string, content string, args ...interface{}) error {
-	config := Appendconfig{Top: false, Addnewline: true}
-	for _, arg := range args {
-		switch v := arg.(type) {
-		case Appendconfig:
-			config = v
-		default:
-			return fmt.Errorf("invalid argument type: %T", v)
-		}
-	}
-	fmt.Println(config)
+func AppendFile(filename string, content string, top bool, addnewline bool) error {
+
+
 	
 	var existingContent string
 	data, err := Readfile(filename)
@@ -262,20 +239,16 @@ func AppendFile(filename string, content string, args ...interface{}) error {
 	}
 
 	existingContent = data.(string)
-	fmt.Println("exist: ",existingContent)
-
-	fmt.Println(existingContent)
 
 	var newContent string
-	if config.Top {
+	if top {
 		newContent = content + existingContent
 	} else {
 		newContent = existingContent + content
 	}
-	if config.Addnewline {
+	if addnewline {
 		newContent += "\n"
 	}
-	fmt.Println("new: ",newContent)
 	err = ioutil.WriteFile(filename, []byte(newContent), 0644)
 	if err != nil {
 		return fmt.Errorf("failed to write to file: %w", err)
