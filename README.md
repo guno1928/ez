@@ -86,7 +86,8 @@ if err != nil {
 ```
 or 
 ```go
-file, err := ez.Readfile("main.go", Readconfig{Linebyline: true})
+optional arg is to return line by line
+file, err := ez.Readfile("main.go", true)
 for _, line := range file {
 //code here
 }
@@ -105,6 +106,9 @@ err = ez.AppendFile("test.txt", "pigs")
 ```
 or 
 ```go
+3rd arg is option to put the append at the top of the file and 4th arg is to add a new line or not
+
+by default top is false and new line is true
 err = ez.AppendFile("test.txt", "pigs", Appendconfig{Top: false, Addnewline: true})
 ```
 
