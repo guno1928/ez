@@ -88,7 +88,7 @@ or
 ```go
 optional arg is to return line by line
 file, err := ez.Readfile("main.go", true)
-for _, line := range file {
+for _, line := range file.([]string) {
 //code here
 }
 ```
