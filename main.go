@@ -190,9 +190,12 @@ func Reverseslice(s []int) {
 
 
 
-func Readfile(filename string, Linebyline bool) (interface{}, error) {
+func Readfile(filename string, args ...bool) (interface{}, error) {
 
-
+	Linebyline := false
+	if len(args) > 0 {
+		Linebyline = args[0]
+	}
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %w", err)
@@ -228,9 +231,16 @@ func WriteFile(filename string, content string) error {
 }
 
 
-func AppendFile(filename string, content string, top bool, addnewline bool) error {
+func AppendFile(filename string, content string, args ...bool) error {
 
-
+	top := false
+	addnewline := false
+	if len(args) > 0 {
+		top = args[0]
+	}
+	if len(args) > 1 {
+		addnewline = args[1]
+	}
 	
 	var existingContent string
 	data, err := Readfile(filename)
