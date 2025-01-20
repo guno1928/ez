@@ -109,7 +109,7 @@ or
 3rd arg is option to put the append at the top of the file and 4th arg is to add a new line or not
 
 by default top is false and new line is true
-err = ez.AppendFile("test.txt", "pigs", Appendconfig{Top: false, Addnewline: true})
+err = ez.AppendFile("test.txt", "pigs", true, true)
 ```
 
 Http/s req
