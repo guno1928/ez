@@ -188,6 +188,24 @@ func Reverseslice(s []int) {
     }
 }
 
+func InIarray(arr []int, num int) bool {
+	for _, v := range arr {
+		if v == num {
+			return true
+		}
+	}
+	return false
+}
+
+func InSarray(arr []string, str string) bool {
+	for _, v := range arr {
+		if v == str {
+			return true
+		}
+	}
+	return false
+}
+
 
 
 func Readfile(filename string, args ...bool) (interface{}, error) {
