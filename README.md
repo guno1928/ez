@@ -76,6 +76,25 @@ for i := 0; i < 10; i++ {
 ez.Reverseslice(myslice)
 
 ```
+check arrays
+```go
+temp := []string{}
+temp = append(temp, "test")
+temp = append(temp, "test2")
+
+fmt.Println(InSarray(temp, "test"))
+fmt.Println(InSarray(temp, "tes"))
+
+OR
+
+temp2 := []int{}
+temp2 = append(temp2, 1)
+temp2 = append(temp2, 2)
+
+fmt.Println(InIarray(temp2, 1))
+fmt.Println(InIarray(temp2, 3))
+```
+
 
 Read file
 ```go
