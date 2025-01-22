@@ -40,7 +40,9 @@ var (
 	_ = context.TODO()
 )
 
-type Nbson = bson.D
+type Nbsond = bson.D
+type Nbsonm = bson.M
+
 
 var MongoClient *mongo.Client
 var clientLock sync.Mutex
@@ -176,7 +178,7 @@ func Mongodel_many(client *mongo.Client, mydb string, mycollection string, filte
 //Mongo insert one document into a collection
 //
 // example usage: ez.Mongoinsert_one(client, "mydb", "mycollection", bson.D{{"name", "John"}})
-func Mongoinsert_one(client *mongo.Client, mydb string, mycollection string, document bson.D) error {
+func Mongoinsert_one(client *mongo.Client, mydb string, mycollection string, document bson.M) error {
 	collection := client.Database(mydb).Collection(mycollection)
 	_, err := collection.InsertOne(context.Background(), document)
 	if err != nil {
