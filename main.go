@@ -40,6 +40,8 @@ var (
 	_ = context.TODO()
 )
 
+type Nbson = bson.D
+
 var MongoClient *mongo.Client
 var clientLock sync.Mutex
 var once sync.Once
@@ -161,10 +163,22 @@ func Mongodel_one(client *mongo.Client, mydb string, mycollection string, filter
 
 // Del many documents into a collection
 //
-// example usage: ez.Mongodel_many(client, "mydb", "mycollection", bson.D{{"name", "John"}})
+// example usage: ez.Mongodel_many(client, "mydb", "mycollection", bson.D{{Key: "name", Value:"John"}})
 func Mongodel_many(client *mongo.Client, mydb string, mycollection string, filter bson.D) error {
 	collection := client.Database(mydb).Collection(mycollection)
 	_, err := collection.DeleteMany(context.Background(), filter)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+//Mongo insert one document into a collection
+//
+// example usage: ez.Mongoinsert_one(client, "mydb", "mycollection", bson.D{{"name", "John"}})
+func Mongoinsert_one(client *mongo.Client, mydb string, mycollection string, document bson.D) error {
+	collection := client.Database(mydb).Collection(mycollection)
+	_, err := collection.InsertOne(context.Background(), document)
 	if err != nil {
 		return err
 	}
