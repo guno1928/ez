@@ -17,7 +17,6 @@ go get github.com/guno1928/ez@latest
 Mongo client
 ```go
 client := ez.GetMongoClient("mongodb://localhost:27017")
-collection := client.Database("testdb").Collection("testcollection")
 
 funcs
 ez.Mongoupdate_one
@@ -27,7 +26,7 @@ ez.Mongofind_many
 ez.Mongodel_one
 ez.Mongodel_many
 
-filter := bson.D{{"email", "emailhere"}}
+filter := bson.D{{Key: "email", Value: "emailhere"}}
 update := bson.D{{"$set", bson.D{{"commission", 10}}}}
 temp := ez.Mongoupdate_one(client, "aloscdn", "alosusers", filter, update)
 if temp != nil {
@@ -35,7 +34,7 @@ if temp != nil {
 }
 fmt.Println(temp, temp["_id"])
 
-filter = bson.D{{"email", "emailhere"}}
+filter = bson.D{{Key: "email", Value: "emailhere"}}
 result, err := Mongofind_one(client, "aloscdn", "alosusers", filter)
 if err != nil {
     fmt.Println(err)
