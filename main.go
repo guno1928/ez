@@ -216,7 +216,7 @@ func Randint(min, max int) int {
 // Get a random integer between min and max for int64
 //
 // example usage: temp := ez.Randint64(1, 10)
-func Randint64(min, max int) int {
+func Randint64(min, max int) int64 {
 	return min + int(fastrand.Uint64n(uint64(max-min+1)))
 }
 
