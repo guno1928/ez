@@ -398,6 +398,131 @@ func ParseJson(body string) (map[string]interface{}, error) {
 	return result, nil
 }
 
+
+func executeRequestmore(req *http.Request) (*http.Response, error) {
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("error performing request: %w", err)
+	}
+
+	return resp, nil
+}
+
+// Get request
+//
+// example usage: temp, err := ez.MoreGet("https://jsonplaceholder.typicode.com/todos/1", nil)
+//
+// example usage: temp, err := ez.MoreGet("https://jsonplaceholder.typicode.com/todos/1", map[string]string{"Authorization":"temp"}
+//
+// func MoreGet(url string, headers map[string]string) (*http.Response, error) {
+func MoreGet(url string, headers map[string]string) (*http.Response, error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return "", fmt.Errorf("error creating GET request: %w", err)
+	}
+	addHeaders(req, headers)
+	return executeRequestmore(req)
+}
+
+// Post request
+//
+// example usage: temp, err := ez.MorePost("https://jsonplaceholder.typicode.com/posts", []byte(`{"title": "foo", "body": "bar", "userId": 1}`), nil)
+//
+// func MorePost(url string, data []byte, headers map[string]string) (*http.Response, error) {
+func MorePost(url string, data []byte, headers map[string]string) (*http.Response, error) {
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
+	if err != nil {
+		return "", fmt.Errorf("error creating POST request: %w", err)
+	}
+	addHeaders(req, headers)
+	return executeRequestmore(req)
+}
+
+// Put request
+//
+// example usage: temp, err := ez.MorePut("https://jsonplaceholder.typicode.com/posts/1", []byte(`{"id": 1, "title": "foo", "body": "bar", "userId": 1}`), nil)
+//
+// func MorePut(url string, data []byte, headers map[string]string) (*http.Response, error) {
+func MorePut(url string, data []byte, headers map[string]string) (*http.Response, error) {
+	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(data))
+	if err != nil {
+		return "", fmt.Errorf("error creating PUT request: %w", err)
+	}
+	addHeaders(req, headers)
+	return executeRequestmore(req)
+}
+
+// Delete request
+//
+// example usage: temp, err := ez.MoreDelete("https://jsonplaceholder.typicode.com/posts/1", nil)
+//
+// func MoreDelete(url string, headers map[string]string) (*http.Response, error) {
+func MoreDelete(url string, headers map[string]string) (*http.Response, error) {
+	req, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		return "", fmt.Errorf("error creating DELETE request: %w", err)
+	}
+	addHeaders(req, headers)
+	return executeRequestmore(req)
+}
+
+// Patch request
+//
+// example usage: temp, err := ez.MorePatch("https://jsonplaceholder.typicode.com/posts/1", []byte(`{"title": "foo"}`), nil)
+//
+// func MorePatch(url string, data []byte, headers map[string]string) (*http.Response, error) {
+func MorePatch(url string, data []byte, headers map[string]string) (*http.Response, error) {
+	req, err := http.NewRequest("PATCH", url, bytes.NewBuffer(data))
+	if err != nil {
+		return "", fmt.Errorf("error creating PATCH request: %w", err)
+	}
+	addHeaders(req, headers)
+	return executeRequestmore(req)
+}
+
+// Options request
+//
+// example usage: temp, err := ez.MoreOptions("https://jsonplaceholder.typicode.com/posts/1", nil)
+//
+// func MoreOptions(url string, headers map[string]string) (*http.Response, error) {
+func MoreOptions(url string, headers map[string]string) (*http.Response, error) {
+	req, err := http.NewRequest("OPTIONS", url, nil)
+	if err != nil {
+		return "", fmt.Errorf("error creating OPTIONS request: %w", err)
+	}
+	addHeaders(req, headers)
+	return executeRequestmore(req)
+}
+
+// Head request
+//
+// example usage: temp, err := ez.MoreHead("https://jsonplaceholder.typicode.com/posts/1", nil)
+//
+// func MoreHead(url string, headers map[string]string) (*http.Response, error) {
+func MoreHead(url string, headers map[string]string) (*http.Response, error) {
+	req, err := http.NewRequest("HEAD", url, nil)
+	if err != nil {
+		return "", fmt.Errorf("error creating HEAD request: %w", err)
+	}
+	addHeaders(req, headers)
+	return executeRequestmore(req)
+}
+
+// Trace request
+//
+// example usage: temp, err := ez.MoreTrace("https://jsonplaceholder.typicode.com/posts/1", nil)
+//
+// func MoreTrace(url string, headers map[string]string) (*http.Response, error) {
+func MoreTrace(url string, headers map[string]string) (*http.Response, error) {
+	req, err := http.NewRequest("TRACE", url, nil)
+	if err != nil {
+		return "", fmt.Errorf("error creating TRACE request: %w", err)
+	}
+	addHeaders(req, headers)
+	return executeRequestmore(req)
+}
+
 // Get request
 //
 // example usage: temp, err := ez.Get("https://jsonplaceholder.typicode.com/todos/1", nil)
@@ -495,15 +620,7 @@ func Head(url string, headers map[string]string) (string, error) {
 		return "", fmt.Errorf("error creating HEAD request: %w", err)
 	}
 	addHeaders(req, headers)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("error performing HEAD request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	return resp.Status, nil
+	return executeRequest(req)
 }
 
 // Trace request
