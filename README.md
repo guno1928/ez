@@ -134,7 +134,9 @@ Http/s req
 
 GET
 ```go
-res, _:= ez.Get("https://alos.gg/alosgg/lookup", nil)
+res, _:= ez.Get("https://alos.gg/alosgg/lookup", nil) // will return only the body
+
+resp, _ ez.MoreGet("https://alos.gg/alosgg/lookup", nil) // will return the http.response itself you can use ez.MoreGet, ez.MorePost etc
 ```
 or 
 ```go
