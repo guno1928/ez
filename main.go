@@ -40,6 +40,12 @@ var (
 	_ = context.TODO()
 )
 
+var bufPool = sync.Pool{
+	New: func() interface{} {
+		return new(bytes.Buffer)
+	},
+}
+
 type Nbsond = bson.D
 type Nbsonm = bson.M
 
@@ -373,6 +379,7 @@ func addHeaders(req *http.Request, headers map[string]string) {
 	}
 }
 
+
 func executeRequest(req *http.Request) (string, error) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -380,13 +387,16 @@ func executeRequest(req *http.Request) (string, error) {
 		return "", fmt.Errorf("error performing request: %w", err)
 	}
 	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
+	buf := bufPool.Get().(*bytes.Buffer)
+	buf.Reset()
+	_, err = io.Copy(buf, resp.Body)
 	if err != nil {
+		bufPool.Put(buf)
 		return "", fmt.Errorf("error reading response body: %w", err)
 	}
-
-	return string(body), nil
+	body := buf.String()
+	bufPool.Put(buf)
+	return body, nil
 }
 
 func ParseJson(body string) (map[string]interface{}, error) {
