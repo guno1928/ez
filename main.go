@@ -55,6 +55,46 @@ var MongoClient *mongo.Client
 var clientLock sync.Mutex
 var once sync.Once
 
+var rCache *ristretto.Cache[string, []reflect.Value]
+
+func init() {
+	var err error
+	rCache, err = ristretto.NewCache(&ristretto.Config[string, []reflect.Value]{
+		NumCounters: 999999,
+		MaxCost:     1 << 20,
+		BufferItems: 512,
+	})
+	if err != nil {
+		panic(err)
+	}
+}
+
+
+// Memoize a function
+// uses a timed cache to store the results of the function
+// example usage: ez.Memoize(funchere).(func(int, int) int))(1, 2)
+func Memoize(fn interface{}) interface{} {
+	v := reflect.ValueOf(fn)
+	if v.Kind() != reflect.Func {
+		panic("Memoize only accepts functions")
+	}
+	funcId := fmt.Sprintf("%p", v.Pointer())
+	memoizedFunc := reflect.MakeFunc(v.Type(), func(in []reflect.Value) []reflect.Value {
+		key := funcId
+		for _, arg := range in {
+			key += fmt.Sprintf("-%#v", arg.Interface())
+		}
+		if res, found := rCache.Get(key); found {
+			return res
+		}
+		out := v.Call(in)
+		rCache.SetWithTTL(key, out, 1, 6*time.Second)
+		rCache.Wait()
+		return out
+	})
+	return memoizedFunc.Interface()
+}
+
 // Get the mongo client instance
 // example usage: ez.GetMongoClient("mongodb://localhost:27017")
 func GetMongoClient(URI string) *mongo.Client {
