@@ -52,7 +52,7 @@ func add(a, b int) int {
 }
 fmt.Println((ez.Memoize(add).(func(int, int) int))(1, 2)) // this will be calcualted
 fmt.Println((ez.Memoize(add).(func(int, int) int))(1, 2)) // this will be pulled from cache
-
+```
 
 Hashing
 ```go
