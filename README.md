@@ -50,8 +50,8 @@ cache functions, the cache is a 6 second cache
 func add(a, b int) int {
     return a + b
 }
-fmt.Println((ez.Memoize(add).(func(int, int) int))(1, 2)) // this will be calcualted
-fmt.Println((ez.Memoize(add).(func(int, int) int))(1, 2)) // this will be pulled from cache
+fmt.Println((ez.Memorize(add).(func(int, int) int))(1, 2)) // this will be calcualted
+fmt.Println((ez.Memorize(add).(func(int, int) int))(1, 2)) // this will be pulled from cache
 ```
 
 Hashing

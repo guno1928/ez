@@ -72,16 +72,16 @@ func init() {
 }
 
 
-// Memoize a function
+// Memorize a function
 // uses a timed cache to store the results of the function
-// example usage: ez.Memoize(funchere).(func(int, int) int))(1, 2)
-func Memoize(fn interface{}) interface{} {
+// example usage: ez.Memorize(funchere).(func(int, int) int))(1, 2)
+func Memorize(fn interface{}) interface{} {
 	v := reflect.ValueOf(fn)
 	if v.Kind() != reflect.Func {
-		panic("Memoize only accepts functions")
+		panic("memorize only accepts functions")
 	}
 	funcId := fmt.Sprintf("%p", v.Pointer())
-	memoizedFunc := reflect.MakeFunc(v.Type(), func(in []reflect.Value) []reflect.Value {
+	memorizeFunc := reflect.MakeFunc(v.Type(), func(in []reflect.Value) []reflect.Value {
 		key := funcId
 		for _, arg := range in {
 			key += fmt.Sprintf("-%#v", arg.Interface())
@@ -94,7 +94,7 @@ func Memoize(fn interface{}) interface{} {
 		rCache.Wait()
 		return out
 	})
-	return memoizedFunc.Interface()
+	return memorizeFunc.Interface()
 }
 
 // Get the mongo client instance
