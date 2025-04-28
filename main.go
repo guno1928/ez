@@ -71,7 +71,8 @@ func init() {
 	}
 }
 
-
+// Convert string to int
+// example usage: ez.Toint("123")
 func Toint(s string) (int, error) {
 	return strconv.Atoi(s)
 }
