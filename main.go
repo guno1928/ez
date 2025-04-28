@@ -700,7 +700,6 @@ func Trace(url string, headers map[string]string) (string, error) {
 // example usage: temp, err := ez.GetJson("https://jsonplaceholder.typicode.com/todos/1", nil)
 //
 // func GetJson(url string, headers map[string]string) (map[string]interface{}, error) {
-
 func GetJson(url string, headers map[string]string) (map[string]interface{}, error) {
 	body, err := Get(url, headers)
 	if err != nil {
