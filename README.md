@@ -75,6 +75,16 @@ float := ez.Randfloat(1.0, 10.0)
 float2 := ez.Randfloat64(1.0, 10.0)
 ```
 
+easy string to int 
+```go
+number, err := ez.Toint("123")
+if err != nil {
+//err
+}
+```
+
+
+
 Slice reversing 
 ```go
 var myslice []int

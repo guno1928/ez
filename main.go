@@ -72,6 +72,10 @@ func init() {
 }
 
 
+func Toint(s string) (int, error) {
+	return strconv.Atoi(s)
+}
+
 // Memorize a function
 // uses a timed cache to store the results of the function
 // example usage: ez.Memorize(funchere).(func(int, int) int))(1, 2)
