@@ -42,6 +42,7 @@ var (
 	_ = options.ClientOptions{}
 	_ = readpref.Primary()
 	_ = context.TODO()
+	client = &http.Client{}
 )
 
 var bufPool = sync.Pool{
@@ -49,6 +50,13 @@ var bufPool = sync.Pool{
 		return new(bytes.Buffer)
 	},
 }
+
+var readerPool = sync.Pool{
+	New: func() interface{} {
+		return new(bytes.Reader)
+	},
+}
+
 
 type Nbsond = bson.D
 type Nbsonm = bson.M
@@ -436,16 +444,11 @@ func executeRequest(req *http.Request) (string, error) {
 		return "", fmt.Errorf("error performing request: %w", err)
 	}
 	defer resp.Body.Close()
-	buf := bufPool.Get().(*bytes.Buffer)
-	buf.Reset()
-	_, err = io.Copy(buf, resp.Body)
+	bodybytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		bufPool.Put(buf)
 		return "", fmt.Errorf("error reading response body: %w", err)
 	}
-	body := buf.String()
-	bufPool.Put(buf)
-	return body, nil
+	return string(bodybytes), nil
 }
 
 func ParseJson(body string) (map[string]interface{}, error) {
@@ -490,7 +493,10 @@ func MoreGet(url string, headers map[string]string) (*http.Response, error) {
 //
 // func MorePost(url string, data []byte, headers map[string]string) (*http.Response, error) {
 func MorePost(url string, data []byte, headers map[string]string) (*http.Response, error) {
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
+	r := readerPool.Get().(*bytes.Reader)
+	r.Reset(data)
+	defer readerPool.Put(r)
+	req, err := http.NewRequest("POST", url, r)
 	if err != nil {
 		return nil, fmt.Errorf("error creating POST request: %w", err)
 	}
@@ -504,7 +510,10 @@ func MorePost(url string, data []byte, headers map[string]string) (*http.Respons
 //
 // func MorePut(url string, data []byte, headers map[string]string) (*http.Response, error) {
 func MorePut(url string, data []byte, headers map[string]string) (*http.Response, error) {
-	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(data))
+	r := readerPool.Get().(*bytes.Reader)
+	r.Reset(data)
+	defer readerPool.Put(r)
+	req, err := http.NewRequest("PUT", url, r)
 	if err != nil {
 		return nil, fmt.Errorf("error creating PUT request: %w", err)
 	}
@@ -532,7 +541,10 @@ func MoreDelete(url string, headers map[string]string) (*http.Response, error) {
 //
 // func MorePatch(url string, data []byte, headers map[string]string) (*http.Response, error) {
 func MorePatch(url string, data []byte, headers map[string]string) (*http.Response, error) {
-	req, err := http.NewRequest("PATCH", url, bytes.NewBuffer(data))
+	r := readerPool.Get().(*bytes.Reader)
+	r.Reset(data)
+	defer readerPool.Put(r)
+	req, err := http.NewRequest("PATCH", url, r)
 	if err != nil {
 		return nil, fmt.Errorf("error creating PATCH request: %w", err)
 	}
@@ -604,7 +616,10 @@ func Get(url string, headers map[string]string) (string, error) {
 //
 // func Post(url string, data []byte, headers map[string]string) (string, error) {
 func Post(url string, data []byte, headers map[string]string) (string, error) {
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
+	r := readerPool.Get().(*bytes.Reader)
+	r.Reset(data)
+	defer readerPool.Put(r)
+	req, err := http.NewRequest("POST", url, r)
 	if err != nil {
 		return "", fmt.Errorf("error creating POST request: %w", err)
 	}
@@ -618,7 +633,10 @@ func Post(url string, data []byte, headers map[string]string) (string, error) {
 //
 // func Put(url string, data []byte, headers map[string]string) (string, error) {
 func Put(url string, data []byte, headers map[string]string) (string, error) {
-	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(data))
+	r := readerPool.Get().(*bytes.Reader)
+	r.Reset(data)
+	defer readerPool.Put(r)
+	req, err := http.NewRequest("PUT", url, r)
 	if err != nil {
 		return "", fmt.Errorf("error creating PUT request: %w", err)
 	}
@@ -646,7 +664,10 @@ func Delete(url string, headers map[string]string) (string, error) {
 //
 // func Patch(url string, data []byte, headers map[string]string) (string, error) {
 func Patch(url string, data []byte, headers map[string]string) (string, error) {
-	req, err := http.NewRequest("PATCH", url, bytes.NewBuffer(data))
+	r := readerPool.Get().(*bytes.Reader)
+	r.Reset(data)
+	defer readerPool.Put(r)
+	req, err := http.NewRequest("PATCH", url, r)
 	if err != nil {
 		return "", fmt.Errorf("error creating PATCH request: %w", err)
 	}
