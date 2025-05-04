@@ -35,7 +35,8 @@ var (
 	_ = os.Getenv("")
 	_ = sync.Mutex{}
 	_ = bufio.NewReader
-
+	_ = sync.Pool{}
+	_ = io.Copy
 	_ = bson.M{}
 	_ = primitive.ObjectID{}
 	_ = mongo.Client{}
