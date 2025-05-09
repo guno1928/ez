@@ -87,29 +87,40 @@ func Toint(s string) (int, error) {
 	return strconv.Atoi(s)
 }
 
+var Memorizecachemap sync.Map
+
+type Memorizecache struct {
+	out    []reflect.Value
+	expiry time.Time
+}
+
 // Memorize a function
 // uses a timed cache to store the results of the function
 // example usage: ez.Memorize(funchere).(func(int, int) int))(1, 2)
 func Memorize(fn interface{}) interface{} {
 	v := reflect.ValueOf(fn)
 	if v.Kind() != reflect.Func {
-		panic("memorize only accepts functions")
+		panic("Memorize requires a function")
 	}
-	funcId := fmt.Sprintf("%p", v.Pointer())
-	memorizeFunc := reflect.MakeFunc(v.Type(), func(in []reflect.Value) []reflect.Value {
-		key := funcId
-		for _, arg := range in {
-			key += fmt.Sprintf("-%#v", arg.Interface())
+	fnPtr := v.Pointer()
+	numberv := uint64(v.Pointer())
+	wrapper := reflect.MakeFunc(v.Type(), func(args []reflect.Value) []reflect.Value {
+		if cached, ok := Memorizecachemap.Load(numberv); ok {
+			if time.Now().After(cached.(Memorizecache).expiry) {
+				Memorizecachemap.Delete(numberv)
+			} else {
+				return cached.(Memorizecache).out
+			}
 		}
-		if res, found := rCache.Get(key); found {
-			return res
+		key := fmt.Sprint(fnPtr)
+		for _, a := range args {
+			key += "|" + fmt.Sprint(a.Interface())
 		}
-		out := v.Call(in)
-		rCache.SetWithTTL(key, out, 1, 6*time.Second)
-		rCache.Wait()
+		out := v.Call(args)
+		Memorizecachemap.Store(numberv, Memorizecache{out: out, expiry: time.Now().Add(6 * time.Second)})
 		return out
 	})
-	return memorizeFunc.Interface()
+	return wrapper.Interface()
 }
 
 // Get the mongo client instance
