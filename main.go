@@ -67,20 +67,6 @@ var MongoClient *mongo.Client
 var clientLock sync.Mutex
 var once sync.Once
 
-var rCache *ristretto.Cache[string, []reflect.Value]
-
-func init() {
-	var err error
-	rCache, err = ristretto.NewCache(&ristretto.Config[string, []reflect.Value]{
-		NumCounters: 999999,
-		MaxCost:     1 << 20,
-		BufferItems: 512,
-	})
-	if err != nil {
-		panic(err)
-	}
-}
-
 // Convert string to int
 // example usage: ez.Toint("123")
 func Toint(s string) (int, error) {
@@ -92,6 +78,416 @@ var Memorizecachemap sync.Map
 type Memorizecache struct {
 	out    []reflect.Value
 	expiry time.Time
+}
+
+var (
+	cacheMu   sync.RWMutex
+	funcCache = make(map[string]interface{})
+)
+
+type cacheEntry[R any] struct {
+	result R
+	expiry time.Time
+}
+
+type cacheEntryE[R1, R2 any] struct {
+	value1 R1
+	value2 R2
+	expiry time.Time
+}
+
+// Memoize a function with 1 argument and 1 return value
+// Has a cache time of 6 seconds 
+// example usage: temp := ez.Memo1(funchere, arg1)
+func Memo1[A comparable, R any](fn func(A) R, arg A) R {
+	key := fmt.Sprintf("%p|%v", fn, arg)
+	cacheMu.RLock()
+	if e, ok := funcCache[key]; ok {
+		entry := e.(*cacheEntry[R])
+		if time.Now().Before(entry.expiry) {
+			cacheMu.RUnlock()
+			return entry.result
+		}
+		cacheMu.RUnlock()
+		cacheMu.Lock()
+		delete(funcCache, key)
+		cacheMu.Unlock()
+	} else {
+		cacheMu.RUnlock()
+	}
+
+	res := fn(arg)
+	entry := &cacheEntry[R]{result: res, expiry: time.Now().Add(6 * time.Second)}
+	cacheMu.Lock()
+	funcCache[key] = entry
+	cacheMu.Unlock()
+	return res
+}
+
+
+// Memoize a function with 1 argument and 2 return values
+// Has a cache time of 6 seconds
+// example usage: temp1, temp2 := ez.Memo1e(funchere, arg1)
+func Memo1e[A comparable, R1, R2 any](fn func(A) (R1, R2), arg A) (R1, R2) {
+	key := fmt.Sprintf("%p|%v", fn, arg)
+	cacheMu.RLock()
+	if e, ok := funcCache[key]; ok {
+		entry := e.(*cacheEntryE[R1, R2])
+		if time.Now().Before(entry.expiry) {
+			cacheMu.RUnlock()
+			return entry.value1, entry.value2
+		}
+		cacheMu.RUnlock()
+		cacheMu.Lock()
+		delete(funcCache, key)
+		cacheMu.Unlock()
+	} else {
+		cacheMu.RUnlock()
+	}
+
+	v1, v2 := fn(arg)
+	entry := &cacheEntryE[R1, R2]{value1: v1, value2: v2, expiry: time.Now().Add(6 * time.Second)}
+	cacheMu.Lock()
+	funcCache[key] = entry
+	cacheMu.Unlock()
+	return v1, v2
+}
+
+// Memoize a function with 2 arguments and 1 return value
+// Has a cache time of 6 seconds
+// example usage: temp := ez.Memo2(funchere, arg1, arg2)
+func Memo2[A, B comparable, R any](fn func(A, B) R, arg1 A, arg2 B) R {
+	key := fmt.Sprintf("%p|%v|%v", fn, arg1, arg2)
+	cacheMu.RLock()
+	if e, ok := funcCache[key]; ok {
+		entry := e.(*cacheEntry[R])
+		if time.Now().Before(entry.expiry) {
+			cacheMu.RUnlock()
+			return entry.result
+		}
+		cacheMu.RUnlock()
+		cacheMu.Lock()
+		delete(funcCache, key)
+		cacheMu.Unlock()
+	} else {
+		cacheMu.RUnlock()
+	}
+
+	res := fn(arg1, arg2)
+	entry := &cacheEntry[R]{result: res, expiry: time.Now().Add(6 * time.Second)}
+	cacheMu.Lock()
+	funcCache[key] = entry
+	cacheMu.Unlock()
+	return res
+}
+
+// Memoize a function with 2 arguments and 2 return values
+// Has a cache time of 6 seconds
+// example usage: temp1, temp2 := ez.Memo2e(funchere, arg1, arg2)
+func Memo2e[A, B comparable, R1, R2 any](fn func(A, B) (R1, R2), arg1 A, arg2 B) (R1, R2) {
+	key := fmt.Sprintf("%p|%v|%v", fn, arg1, arg2)
+	cacheMu.RLock()
+	if e, ok := funcCache[key]; ok {
+		entry := e.(*cacheEntryE[R1, R2])
+		if time.Now().Before(entry.expiry) {
+			cacheMu.RUnlock()
+			return entry.value1, entry.value2
+		}
+		cacheMu.RUnlock()
+		cacheMu.Lock()
+		delete(funcCache, key)
+		cacheMu.Unlock()
+	} else {
+		cacheMu.RUnlock()
+	}
+
+	v1, v2 := fn(arg1, arg2)
+	entry := &cacheEntryE[R1, R2]{value1: v1, value2: v2, expiry: time.Now().Add(6 * time.Second)}
+	cacheMu.Lock()
+	funcCache[key] = entry
+	cacheMu.Unlock()
+	return v1, v2
+}
+
+// Memoize a function with 3 arguments and 1 return value
+// Has a cache time of 6 seconds
+// example usage: temp := ez.Memo3(funchere, arg1, arg2, arg3)
+func Memo3[A, B, C comparable, R any](fn func(A, B, C) R, a A, b B, c C) R {
+	key := fmt.Sprintf("%p|%v|%v|%v", fn, a, b, c)
+	cacheMu.RLock()
+	if e, ok := funcCache[key]; ok {
+		entry := e.(*cacheEntry[R])
+		if time.Now().Before(entry.expiry) {
+			cacheMu.RUnlock()
+			return entry.result
+		}
+		cacheMu.RUnlock()
+		cacheMu.Lock()
+		delete(funcCache, key)
+		cacheMu.Unlock()
+	} else {
+		cacheMu.RUnlock()
+	}
+
+	res := fn(a, b, c)
+	entry := &cacheEntry[R]{result: res, expiry: time.Now().Add(6 * time.Second)}
+	cacheMu.Lock()
+	funcCache[key] = entry
+	cacheMu.Unlock()
+	return res
+}
+
+// Memoize a function with 3 arguments and 2 return values
+// Has a cache time of 6 seconds
+// example usage: temp1, temp2 := ez.Memo3e(funchere, arg1, arg2, arg3)
+func Memo3e[A, B, C comparable, R1, R2 any](fn func(A, B, C) (R1, R2), a A, b B, c C) (R1, R2) {
+	key := fmt.Sprintf("%p|%v|%v|%v", fn, a, b, c)
+	cacheMu.RLock()
+	if e, ok := funcCache[key]; ok {
+		entry := e.(*cacheEntryE[R1, R2])
+		if time.Now().Before(entry.expiry) {
+			cacheMu.RUnlock()
+			return entry.value1, entry.value2
+		}
+		cacheMu.RUnlock()
+		cacheMu.Lock()
+		delete(funcCache, key)
+		cacheMu.Unlock()
+	} else {
+		cacheMu.RUnlock()
+	}
+
+	v1, v2 := fn(a, b, c)
+	entry := &cacheEntryE[R1, R2]{value1: v1, value2: v2, expiry: time.Now().Add(6 * time.Second)}
+	cacheMu.Lock()
+	funcCache[key] = entry
+	cacheMu.Unlock()
+	return v1, v2
+}
+
+
+// Memoize a function with 4 arguments and 1 return value
+// Has a cache time of 6 seconds
+// example usage: temp := ez.Memo4(funchere, arg1, arg2, arg3, arg4)
+func Memo4[A, B, C, D comparable, R any](fn func(A, B, C, D) R, a A, b B, c C, d D) R {
+	key := fmt.Sprintf("%p|%v|%v|%v|%v", fn, a, b, c, d)
+	cacheMu.RLock()
+	if e, ok := funcCache[key]; ok {
+		entry := e.(*cacheEntry[R])
+		if time.Now().Before(entry.expiry) {
+			cacheMu.RUnlock()
+			return entry.result
+		}
+		cacheMu.RUnlock()
+		cacheMu.Lock()
+		delete(funcCache, key)
+		cacheMu.Unlock()
+	} else {
+		cacheMu.RUnlock()
+	}
+
+	res := fn(a, b, c, d)
+	entry := &cacheEntry[R]{result: res, expiry: time.Now().Add(6 * time.Second)}
+	cacheMu.Lock()
+	funcCache[key] = entry
+	cacheMu.Unlock()
+	return res
+}
+
+// Memoize a function with 4 arguments and 2 return values
+// Has a cache time of 6 seconds
+// example usage: temp1, temp2 := ez.Memo4e(funchere, arg1, arg2, arg3, arg4)
+func Memo4e[A, B, C, D comparable, R1, R2 any](fn func(A, B, C, D) (R1, R2), a A, b B, c C, d D) (R1, R2) {
+	key := fmt.Sprintf("%p|%v|%v|%v|%v", fn, a, b, c, d)
+	cacheMu.RLock()
+	if e, ok := funcCache[key]; ok {
+		entry := e.(*cacheEntryE[R1, R2])
+		if time.Now().Before(entry.expiry) {
+			cacheMu.RUnlock()
+			return entry.value1, entry.value2
+		}
+		cacheMu.RUnlock()
+		cacheMu.Lock()
+		delete(funcCache, key)
+		cacheMu.Unlock()
+	} else {
+		cacheMu.RUnlock()
+	}
+
+	v1, v2 := fn(a, b, c, d)
+	entry := &cacheEntryE[R1, R2]{value1: v1, value2: v2, expiry: time.Now().Add(6 * time.Second)}
+	cacheMu.Lock()
+	funcCache[key] = entry
+	cacheMu.Unlock()
+	return v1, v2
+}
+
+// Memoize a function with 5 arguments and 1 return value
+// Has a cache time of 6 seconds
+// example usage: temp := ez.Memo5(funchere, arg1, arg2, arg3, arg4, arg5)
+func Memo5[A, B, C, D, E comparable, R any](fn func(A, B, C, D, E) R, a A, b B, c C, d D, e E) R {
+	key := fmt.Sprintf("%p|%v|%v|%v|%v|%v", fn, a, b, c, d, e)
+	cacheMu.RLock()
+	if val, ok := funcCache[key]; ok {
+		entry := val.(*cacheEntry[R])
+		if time.Now().Before(entry.expiry) {
+			cacheMu.RUnlock()
+			return entry.result
+		}
+		cacheMu.RUnlock()
+		cacheMu.Lock()
+		delete(funcCache, key)
+		cacheMu.Unlock()
+	} else {
+		cacheMu.RUnlock()
+	}
+
+	res := fn(a, b, c, d, e)
+	entry := &cacheEntry[R]{result: res, expiry: time.Now().Add(6 * time.Second)}
+	cacheMu.Lock()
+	funcCache[key] = entry
+	cacheMu.Unlock()
+	return res
+}
+
+// Memoize a function with 5 arguments and 2 return values
+// Has a cache time of 6 seconds
+// example usage: temp1, temp2 := ez.Memo5e(funchere, arg1, arg2, arg3, arg4, arg5)
+func Memo5e[A, B, C, D, E comparable, R1, R2 any](fn func(A, B, C, D, E) (R1, R2), a A, b B, c C, d D, e E) (R1, R2) {
+	key := fmt.Sprintf("%p|%v|%v|%v|%v|%v", fn, a, b, c, d, e)
+	cacheMu.RLock()
+	if val, ok := funcCache[key]; ok {
+		entry := val.(*cacheEntryE[R1, R2])
+		if time.Now().Before(entry.expiry) {
+			cacheMu.RUnlock()
+			return entry.value1, entry.value2
+		}
+		cacheMu.RUnlock()
+		cacheMu.Lock()
+		delete(funcCache, key)
+		cacheMu.Unlock()
+	} else {
+		cacheMu.RUnlock()
+	}
+
+	v1, v2 := fn(a, b, c, d, e)
+	entry := &cacheEntryE[R1, R2]{value1: v1, value2: v2, expiry: time.Now().Add(6 * time.Second)}
+	cacheMu.Lock()
+	funcCache[key] = entry
+	cacheMu.Unlock()
+	return v1, v2
+}
+
+// Memoize a function with 6 arguments and 1 return value
+// Has a cache time of 6 seconds
+// example usage: temp := ez.Memo6(funchere, arg1, arg2, arg3, arg4, arg5, arg6)
+func Memo6[A, B, C, D, E, F comparable, R any](fn func(A, B, C, D, E, F) R, a A, b B, c C, d D, e E, f F) R {
+	key := fmt.Sprintf("%p|%v|%v|%v|%v|%v|%v", fn, a, b, c, d, e, f)
+	cacheMu.RLock()
+	if val, ok := funcCache[key]; ok {
+		entry := val.(*cacheEntry[R])
+		if time.Now().Before(entry.expiry) {
+			cacheMu.RUnlock()
+			return entry.result
+		}
+		cacheMu.RUnlock()
+		cacheMu.Lock()
+		delete(funcCache, key)
+		cacheMu.Unlock()
+	} else {
+		cacheMu.RUnlock()
+	}
+
+	res := fn(a, b, c, d, e, f)
+	entry := &cacheEntry[R]{result: res, expiry: time.Now().Add(6 * time.Second)}
+	cacheMu.Lock()
+	funcCache[key] = entry
+	cacheMu.Unlock()
+	return res
+}
+
+// Memoize a function with 6 arguments and 2 return values
+// Has a cache time of 6 seconds
+// example usage: temp1, temp2 := ez.Memo6e(funchere, arg1, arg2, arg3, arg4, arg5, arg6)
+func Memo6e[A, B, C, D, E, F comparable, R1, R2 any](fn func(A, B, C, D, E, F) (R1, R2), a A, b B, c C, d D, e E, f F) (R1, R2) {
+	key := fmt.Sprintf("%p|%v|%v|%v|%v|%v|%v", fn, a, b, c, d, e, f)
+	cacheMu.RLock()
+	if val, ok := funcCache[key]; ok {
+		entry := val.(*cacheEntryE[R1, R2])
+		if time.Now().Before(entry.expiry) {
+			cacheMu.RUnlock()
+			return entry.value1, entry.value2
+		}
+		cacheMu.RUnlock()
+		cacheMu.Lock()
+		delete(funcCache, key)
+		cacheMu.Unlock()
+	} else {
+		cacheMu.RUnlock()
+	}
+
+	v1, v2 := fn(a, b, c, d, e, f)
+	entry := &cacheEntryE[R1, R2]{value1: v1, value2: v2, expiry: time.Now().Add(6 * time.Second)}
+	cacheMu.Lock()
+	funcCache[key] = entry
+	cacheMu.Unlock()
+	return v1, v2
+}
+
+// Memoize a function with 7 arguments and 1 return value
+// Has a cache time of 6 seconds
+// example usage: temp := ez.Memo7(funchere, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+func Memo7[A, B, C, D, E, F, G comparable, R any](fn func(A, B, C, D, E, F, G) R, a A, b B, c C, d D, e E, f F, g G) R {
+	key := fmt.Sprintf("%p|%v|%v|%v|%v|%v|%v|%v", fn, a, b, c, d, e, f, g)
+	cacheMu.RLock()
+	if val, ok := funcCache[key]; ok {
+		entry := val.(*cacheEntry[R])
+		if time.Now().Before(entry.expiry) {
+			cacheMu.RUnlock()
+			return entry.result
+		}
+		cacheMu.RUnlock()
+		cacheMu.Lock()
+		delete(funcCache, key)
+		cacheMu.Unlock()
+	} else {
+		cacheMu.RUnlock()
+	}
+
+	res := fn(a, b, c, d, e, f, g)
+	entry := &cacheEntry[R]{result: res, expiry: time.Now().Add(6 * time.Second)}
+	cacheMu.Lock()
+	funcCache[key] = entry
+	cacheMu.Unlock()
+	return res
+}
+
+// Memoize a function with 7 arguments and 2 return values
+// Has a cache time of 6 seconds
+// example usage: temp1, temp2 := ez.Memo7e(funchere, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+func Memo7e[A, B, C, D, E, F, G comparable, R1, R2 any](fn func(A, B, C, D, E, F, G) (R1, R2), a A, b B, c C, d D, e E, f F, g G) (R1, R2) {
+	key := fmt.Sprintf("%p|%v|%v|%v|%v|%v|%v|%v", fn, a, b, c, d, e, f, g)
+	cacheMu.RLock()
+	if val, ok := funcCache[key]; ok {
+		entry := val.(*cacheEntryE[R1, R2])
+		if time.Now().Before(entry.expiry) {
+			cacheMu.RUnlock()
+			return entry.value1, entry.value2
+		}
+		cacheMu.RUnlock()
+		cacheMu.Lock()
+		delete(funcCache, key)
+		cacheMu.Unlock()
+	} else {
+		cacheMu.RUnlock()
+	}
+
+	v1, v2 := fn(a, b, c, d, e, f, g)
+	entry := &cacheEntryE[R1, R2]{value1: v1, value2: v2, expiry: time.Now().Add(6 * time.Second)}
+	cacheMu.Lock()
+	funcCache[key] = entry
+	cacheMu.Unlock()
+	return v1, v2
 }
 
 // Memorize a function
@@ -170,8 +566,10 @@ func IsMongoConnected(client *mongo.Client) bool {
 //
 // example usage: ez.Mongoupdate_one(client, "mydb", "mycollection", bson.D{{"name", "John"}}, bson.D{{"$set", bson.D{{"name", "Doe"}}}})
 func Mongoupdate_one(client *mongo.Client, mydb string, mycollection string, filter bson.D, update bson.D) error {
+	ctx , cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 	collection := client.Database(mydb).Collection(mycollection)
-	_, err := collection.UpdateOne(context.Background(), filter, update)
+	_, err := collection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return err
 	}
@@ -182,8 +580,10 @@ func Mongoupdate_one(client *mongo.Client, mydb string, mycollection string, fil
 //
 // example usage: ez.Mongoupdate_many(client, "mydb", "mycollection", bson.D{{"name", "John"}}, bson.D{{"$set", bson.D{{"name", "Doe"}}}})
 func Mongoupdate_many(client *mongo.Client, mydb string, mycollection string, filter bson.D, update bson.D) error {
+	ctx , cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 	collection := client.Database(mydb).Collection(mycollection)
-	_, err := collection.UpdateMany(context.Background(), filter, update)
+	_, err := collection.UpdateMany(ctx, filter, update)
 	if err != nil {
 		return err
 	}
@@ -194,9 +594,11 @@ func Mongoupdate_many(client *mongo.Client, mydb string, mycollection string, fi
 //
 // example usage: ez.Mongofind_one(client, "mydb", "mycollection", bson.D{{"name", "John"}})
 func Mongofind_one(client *mongo.Client, mydb string, mycollection string, filter bson.D) (map[string]interface{}, error) {
+	ctx , cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 	collection := client.Database(mydb).Collection(mycollection)
 	var result map[string]interface{}
-	err := collection.FindOne(context.Background(), filter).Decode(&result)
+	err := collection.FindOne(ctx, filter).Decode(&result)
 	if err != nil {
 		return nil, err
 	}
@@ -207,15 +609,17 @@ func Mongofind_one(client *mongo.Client, mydb string, mycollection string, filte
 //
 // example usage: ez.Mongofind_many(client, "mydb", "mycollection", bson.D{{"name", "John"}})
 func Mongofind_many(client *mongo.Client, mydb string, mycollection string, filter bson.D) ([]map[string]interface{}, error) {
+	ctx , cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 	collection := client.Database(mydb).Collection(mycollection)
-	cur, err := collection.Find(context.Background(), filter)
+	cur, err := collection.Find(ctx, filter)
 	if err != nil {
 		return nil, err
 	}
-	defer cur.Close(context.Background())
+	defer cur.Close(ctx)
 
 	var results []map[string]interface{}
-	for cur.Next(context.Background()) {
+	for cur.Next(ctx) {
 		var result map[string]interface{}
 		err := cur.Decode(&result)
 		if err != nil {
@@ -230,8 +634,10 @@ func Mongofind_many(client *mongo.Client, mydb string, mycollection string, filt
 //
 // example usage: ez.Mongodel_one(client, "mydb", "mycollection", bson.D{{"name", "John"}})
 func Mongodel_one(client *mongo.Client, mydb string, mycollection string, filter bson.D) error {
+	ctx , cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 	collection := client.Database(mydb).Collection(mycollection)
-	_, err := collection.DeleteOne(context.Background(), filter)
+	_, err := collection.DeleteOne(ctx, filter)
 	if err != nil {
 		return err
 	}
@@ -242,8 +648,10 @@ func Mongodel_one(client *mongo.Client, mydb string, mycollection string, filter
 //
 // example usage: ez.Mongodel_many(client, "mydb", "mycollection", bson.D{{Key: "name", Value:"John"}})
 func Mongodel_many(client *mongo.Client, mydb string, mycollection string, filter bson.D) error {
+	ctx , cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 	collection := client.Database(mydb).Collection(mycollection)
-	_, err := collection.DeleteMany(context.Background(), filter)
+	_, err := collection.DeleteMany(ctx, filter)
 	if err != nil {
 		return err
 	}
@@ -254,8 +662,10 @@ func Mongodel_many(client *mongo.Client, mydb string, mycollection string, filte
 //
 // example usage: ez.Mongoinsert_one(client, "mydb", "mycollection", bson.D{{"name", "John"}})
 func Mongoinsert_one(client *mongo.Client, mydb string, mycollection string, document bson.M) error {
+	ctx , cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 	collection := client.Database(mydb).Collection(mycollection)
-	_, err := collection.InsertOne(context.Background(), document)
+	_, err := collection.InsertOne(ctx, document)
 	if err != nil {
 		return err
 	}
