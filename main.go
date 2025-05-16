@@ -14,7 +14,6 @@ import (
 	"reflect"
 	"time"
 	"strconv"
-	"github.com/dgraph-io/ristretto/v2"
 	"github.com/bytedance/gopkg/lang/fastrand"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
