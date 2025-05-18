@@ -561,6 +561,42 @@ func IsMongoConnected(client *mongo.Client) bool {
 	return err == nil
 }
 
+// Check if a MongoDB database exists
+// example usage: checker, err := ez.Mongoexists(client, "mydb") 
+// returns true if the database exists, false otherwise
+func Mongoexists(client *mongo.Client, dbName string) (bool, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	dbs, err := client.ListDatabaseNames(ctx, bson.D{})
+	if err != nil {
+		return false, fmt.Errorf("failed to list databases: %w", err)
+	}
+
+	for _, name := range dbs {
+		if name == dbName {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// Create a MongoDB database
+// example usage: checker, err := ez.Mongocreatedb(client, "mydb")
+// returns true if the database was created successfully, false otherwise
+func Mongocreatedb(client *mongo.Client, dbName string) (bool, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	db := client.Database(dbName)
+
+	err := db.CreateCollection(ctx, "ignore")
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 // Update one document into a collection
 //
 // example usage: ez.Mongoupdate_one(client, "mydb", "mycollection", bson.D{{"name", "John"}}, bson.D{{"$set", bson.D{{"name", "Doe"}}}})
