@@ -95,6 +95,62 @@ type cacheEntryE[R1, R2 any] struct {
 	expiry time.Time
 }
 
+// Memoize a function with no arguments and 1 return value
+// Has a cache time of 6 seconds
+// example usage: temp := ez.Memo0(funchere)
+func Memo0[R any](fn func() R) R {
+	key := fmt.Sprintf("%p", fn)
+	cacheMu.RLock()
+	if e, ok := funcCache[key]; ok {
+		entry := e.(*cacheEntry[R])
+		if time.Now().Before(entry.expiry) {
+			cacheMu.RUnlock()
+			return entry.result
+		}
+		cacheMu.RUnlock()
+		cacheMu.Lock()
+		delete(funcCache, key)
+		cacheMu.Unlock()
+	} else {
+		cacheMu.RUnlock()
+	}
+
+	res := fn()
+	entry := &cacheEntry[R]{result: res, expiry: time.Now().Add(6 * time.Second)}
+	cacheMu.Lock()
+	funcCache[key] = entry
+	cacheMu.Unlock()
+	return res
+}
+
+// Memoize a function with no arguments and 2 return values
+// Has a cache time of 6 seconds
+// example usage: temp1, temp2 := ez.Memo0e(funchere)
+func Memo0e[R1, R2 any](fn func() (R1, R2)) (R1, R2) {
+	key := fmt.Sprintf("%p", fn)
+	cacheMu.RLock()
+	if e, ok := funcCache[key]; ok {
+		entry := e.(*cacheEntryE[R1, R2])
+		if time.Now().Before(entry.expiry) {
+			cacheMu.RUnlock()
+			return entry.value1, entry.value2
+		}
+		cacheMu.RUnlock()
+		cacheMu.Lock()
+		delete(funcCache, key)
+		cacheMu.Unlock()
+	} else {
+		cacheMu.RUnlock()
+	}
+
+	v1, v2 := fn()
+	entry := &cacheEntryE[R1, R2]{value1: v1, value2: v2, expiry: time.Now().Add(6 * time.Second)}
+	cacheMu.Lock()
+	funcCache[key] = entry
+	cacheMu.Unlock()
+	return v1, v2
+}
+
 // Memoize a function with 1 argument and 1 return value
 // Has a cache time of 6 seconds 
 // example usage: temp := ez.Memo1(funchere, arg1)
@@ -579,6 +635,20 @@ func Mongoexists(client *mongo.Client, dbName string) (bool, error) {
 		}
 	}
 	return false, nil
+}
+
+// Batch find documents from a collection help to reduce memory usage
+// example usage: ez.Mongobatchfind(ctx, client, "mydb", "mycollection", bson.D{{"name", "John"}}, 1000)
+// will return a cursor to iterate over the results and an error if any
+func Mongobatchfind(ctx context.Context, client *mongo.Client, dbName, colName string, filter interface{}, batchSize int) (*mongo.Cursor, error) {
+	collection := client.Database(dbName).Collection(colName)
+	findOptions := options.Find().SetBatchSize(int32(batchSize))
+
+	cursor, err := collection.Find(ctx, filter, findOptions)
+	if err != nil {
+		return nil, err
+	}
+	return cursor, nil
 }
 
 // Create a MongoDB database
