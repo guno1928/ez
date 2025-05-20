@@ -965,7 +965,7 @@ func addHeaders(req *http.Request, headers map[string]string) {
 
 
 func executeRequest(req *http.Request) (string, error) {
-	client := &http.Client{}
+	client := &http.Client{timeout: 7 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("error performing request: %w", err)
@@ -989,7 +989,7 @@ func ParseJson(body string) (map[string]interface{}, error) {
 
 
 func executeRequestmore(req *http.Request) (*http.Response, error) {
-	client := &http.Client{}
+	client := &http.Client{timeout: 7 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("error performing request: %w", err)
