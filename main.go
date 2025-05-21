@@ -765,17 +765,15 @@ func Mongodel_many(client *mongo.Client, mydb string, mycollection string, filte
 
 //Mongo insert one document into a collection
 //
-// example usage: ez.Mongoinsert_one(client, "mydb", "mycollection", bson.D{{"name", "John"}})
-func Mongoinsert_one(client *mongo.Client, mydb string, mycollection string, document bson.M) error {
-	ctx , cancel := context.WithTimeout(context.Background(), 10*time.Second)
+// example usage: ez.Mongoinsert_one(client, "mydb", "mycollection", map[string]string{"name": "John"})
+func Mongoinsert_one(client *mongo.Client, mydb string, mycollection string, document interface{}) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	collection := client.Database(mydb).Collection(mycollection)
+	collection := client.Database(dbName).Collection(collName)
 	_, err := collection.InsertOne(ctx, document)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
+
 
 // hash a string
 //
