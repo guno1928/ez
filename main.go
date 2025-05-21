@@ -765,7 +765,7 @@ func Mongodel_many(client *mongo.Client, mydb string, mycollection string, filte
 
 //Mongo insert one document into a collection
 //
-// example usage: ez.Mongoinsert_one(client, "mydb", "mycollection", map[string]string{"name": "John"})
+// example usage: ez.Mongoinsert_one(client, "mydb", "mycollection", map[string]interface{}{"name": "John"})
 func Mongoinsert_one(client *mongo.Client, mydb string, mycollection string, document interface{}) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
