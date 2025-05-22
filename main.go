@@ -574,6 +574,19 @@ func Memorize(fn interface{}) interface{} {
 	return wrapper.Interface()
 }
 
+const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_"
+
+// Generate a random string of length n
+// example usage: ez.Randomchar(10)
+// will return a random string of length 10
+func Randomchar(n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[Randint(0, len(letterBytes)-1)]
+	}
+	return string(b)
+}
+
 // Get the mongo client instance
 // example usage: ez.GetMongoClient("mongodb://localhost:27017")
 func GetMongoClient(URI string) *mongo.Client {
