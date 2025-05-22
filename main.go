@@ -769,7 +769,7 @@ func Mongodel_many(client *mongo.Client, mydb string, mycollection string, filte
 func Mongoinsert_one(client *mongo.Client, mydb string, mycollection string, document interface{}) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	collection := client.Database(dbName).Collection(collName)
+	collection := client.Database(mydb).Collection(mycollection)
 	_, err := collection.InsertOne(ctx, document)
 	return err
 }
