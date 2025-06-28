@@ -976,18 +976,55 @@ func addHeaders(req *http.Request, headers map[string]string) {
 
 
 func executeRequest(req *http.Request) (string, error) {
-	client := &http.Client{Timeout: 7 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("error performing request: %w", err)
+	const maxRetries = 3
+	client := &http.Client{Timeout: 6 * time.Second}
+
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		resp, err := client.Do(req)
+		if err != nil {
+			if attempt == maxRetries {
+				return "", fmt.Errorf("error performing request after %d attempts: %w", maxRetries, err)
+			}
+			time.Sleep(1 * time.Second)
+			continue
+		}
+
+		bodybytes, err := ioutil.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			if attempt == maxRetries {
+				return "", fmt.Errorf("error reading response body after %d attempts: %w", maxRetries, err)
+			}
+			time.Sleep(1 * time.Second)
+			continue
+		}
+
+		return string(bodybytes), nil
 	}
-	defer resp.Body.Close()
-	bodybytes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("error reading response body: %w", err)
-	}
-	return string(bodybytes), nil
+
+	return "", fmt.Errorf("unexpected error: all retries failed")
 }
+
+func executeRequestmore(req *http.Request) (*http.Response, error) {
+	const maxRetries = 3
+	client := &http.Client{Timeout: 6 * time.Second}
+
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		resp, err := client.Do(req)
+		if err != nil {
+			if attempt == maxRetries {
+				return nil, fmt.Errorf("error performing request after %d attempts: %w", maxRetries, err)
+			}
+			time.Sleep(1 * time.Second)
+			continue
+		}
+
+		return resp, nil
+	}
+
+	return nil, fmt.Errorf("unexpected error: all retries failed")
+}
+
 
 func ParseJson(body string) (map[string]interface{}, error) {
 	var result map[string]interface{}
@@ -998,16 +1035,6 @@ func ParseJson(body string) (map[string]interface{}, error) {
 	return result, nil
 }
 
-
-func executeRequestmore(req *http.Request) (*http.Response, error) {
-	client := &http.Client{Timeout: 7 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("error performing request: %w", err)
-	}
-
-	return resp, nil
-}
 
 // Get request
 //
