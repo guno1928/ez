@@ -976,7 +976,7 @@ func addHeaders(req *http.Request, headers map[string]string) {
 
 
 func executeRequest(req *http.Request) (string, error) {
-	const maxRetries = 3
+	const maxRetries = 2
 	client := &http.Client{Timeout: 10 * time.Second}
 
 	for attempt := 1; attempt <= maxRetries; attempt++ {
@@ -1006,7 +1006,7 @@ func executeRequest(req *http.Request) (string, error) {
 }
 
 func executeRequestmore(req *http.Request) (*http.Response, error) {
-	const maxRetries = 3
+	const maxRetries = 2
 	client := &http.Client{Timeout: 10 * time.Second}
 
 	for attempt := 1; attempt <= maxRetries; attempt++ {
