@@ -679,6 +679,19 @@ func Mongocreatedb(client *mongo.Client, dbName string) (bool, error) {
 	}
 	return true, nil
 }
+// Drop a MongoDB database
+// example usage: err := ez.Mongodropdb(client, "mydb")
+// returns an error if the database could not be dropped
+func Mongodropdb(client *mongo.Client, dbName string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	err := client.Database(dbName).Drop(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to drop database %s: %w", dbName, err)
+	}
+	return nil
+}
 
 // Update one document into a collection
 //
