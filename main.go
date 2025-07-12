@@ -693,6 +693,21 @@ func Mongodropdb(client *mongo.Client, dbName string) error {
 	return nil
 }
 
+func Mongocreateindex(client *mongo.Client, dbName, collectionName, field string) (error) {
+	collection := client.Database(dbName).Collection(collectionName)
+
+	indexModel := mongo.IndexModel{
+		Keys: bson.D{{Key: field, Value: 1}},
+	}
+
+	_, err := collection.Indexes().CreateOne(context.TODO(), indexModel)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Update one document into a collection
 //
 // example usage: ez.Mongoupdate_one(client, "mydb", "mycollection", bson.D{{"name", "John"}}, bson.D{{"$set", bson.D{{"name", "Doe"}}}})
