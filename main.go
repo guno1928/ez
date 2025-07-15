@@ -74,7 +74,7 @@ func Toint(s string) (int, error) {
 
 // Convert string to int64
 // example usage: ez.Toint64("123")
-func Toint64(s string) (int, error) {
+func Toint64(s string) (int64, error) {
 	return strconv.ParseInt(s, 10, 64)
 }
 
