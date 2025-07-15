@@ -72,6 +72,19 @@ func Toint(s string) (int, error) {
 	return strconv.Atoi(s)
 }
 
+// Convert string to int64
+// example usage: ez.Toint64("123")
+func Toint64(s string) (int, error) {
+	return strconv.ParseInt(s, 10, 64)
+}
+
+// Convert any int to string
+// example usage: mystring := ez.IntToString(123)
+func IntToString[T ~int8 | ~int16 | ~int32 | ~int64 | ~int | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uint | ~uintptr](v T) string {
+	return fmt.Sprintf("%d", v)
+}
+
+
 var Memorizecachemap sync.Map
 
 type Memorizecache struct {
