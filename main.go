@@ -80,7 +80,7 @@ func Toint64(s string) (int64, error) {
 
 // Convert any int to string
 // example usage: mystring := ez.IntToString(123)
-func IntToString[T ~int8 | ~int16 | ~int32 | ~int64 | ~int | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uint | ~uintptr](v T) string {
+func Inttostring[T ~int8 | ~int16 | ~int32 | ~int64 | ~int | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uint | ~uintptr](v T) string {
 	var n int64
 	for i := 0; i < len(s); i++ {
 		n = n*10 + int64(s[i]-'0')
