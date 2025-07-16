@@ -69,23 +69,49 @@ var once sync.Once
 // Convert string to int
 // example usage: ez.Toint("123")
 func Toint(s string) (int, error) {
-	return strconv.Atoi(s)
+	var n int
+	for i := 0; i < len(s); i++ {
+		n = n*10 + int(s[i]-'0')
+	}
+	return n
 }
 
 // Convert string to int64
 // example usage: ez.Toint64("123")
 func Toint64(s string) (int64, error) {
-	return strconv.ParseInt(s, 10, 64)
-}
-
-// Convert any int to string
-// example usage: mystring := ez.IntToString(123)
-func Inttostring[T ~int8 | ~int16 | ~int32 | ~int64 | ~int | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uint | ~uintptr](v T) string {
 	var n int64
 	for i := 0; i < len(s); i++ {
 		n = n*10 + int64(s[i]-'0')
 	}
 	return n
+}
+
+// Convert any int to string
+// example usage: mystring := ez.inttostring(123)
+func inttostring[T interface {
+	int | int8 | int16 | int32 | int64
+}](n T) string {
+	nn := int64(n)
+	if nn == 0 {
+		return "0"
+	}
+	buf := [20]byte{}
+	i := len(buf) - 1
+	neg := false
+	if nn < 0 {
+		neg = true
+		nn = -nn
+	}
+	for nn > 0 {
+		buf[i] = byte(nn%10 + '0')
+		nn /= 10
+		i--
+	}
+	if neg {
+		buf[i] = '-'
+		i--
+	}
+	return string(buf[i+1:])
 }
 
 
