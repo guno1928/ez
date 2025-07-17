@@ -111,7 +111,7 @@ func inttostring[T interface {
 		buf[i] = '-'
 		i--
 	}
-	return string(buf[i+1:])
+	return unsafe.String(&buf[i+1], len(buf)-i-1)
 }
 
 
