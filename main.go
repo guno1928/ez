@@ -91,27 +91,14 @@ func Toint64(s string) (int64) {
 func Inttostring[T interface {
 	int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64
 }](n T) string {
-	nn := int64(n)
-	if nn == 0 {
-		return "0"
+	switch any(n).(type) {
+	case int, int8, int16, int32, int64:
+		return strconv.FormatInt(int64(n), 10)
+	case uint, uint8, uint16, uint32, uint64:
+		return strconv.FormatUint(uint64(n), 10)
+	default:
+		return ""
 	}
-	buf := [20]byte{}
-	i := len(buf) - 1
-	neg := false
-	if nn < 0 {
-		neg = true
-		nn = -nn
-	}
-	for nn > 0 {
-		buf[i] = byte(nn%10 + '0')
-		nn /= 10
-		i--
-	}
-	if neg {
-		buf[i] = '-'
-		i--
-	}
-	return unsafe.String(&buf[i+1], len(buf)-i-1)
 }
 
 
