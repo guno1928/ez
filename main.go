@@ -88,8 +88,8 @@ func Toint64(s string) (int64, error) {
 }
 
 // Convert any int to string
-// example usage: mystring := ez.inttostring(123)
-func inttostring[T interface {
+// example usage: mystring := ez.Inttostring(123)
+func Inttostring[T interface {
 	int | int8 | int16 | int32 | int64
 }](n T) string {
 	nn := int64(n)
