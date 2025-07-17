@@ -89,7 +89,7 @@ func Toint64(s string) (int64) {
 // Convert any int to string
 // example usage: mystring := ez.Inttostring(123)
 func Inttostring[T interface {
-	int | int8 | int16 | int32 | int64
+	int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64
 }](n T) string {
 	nn := int64(n)
 	if nn == 0 {
