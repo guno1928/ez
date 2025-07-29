@@ -604,7 +604,7 @@ func Memorize(fn interface{}) interface{} {
 	return wrapper.Interface()
 }
 
-const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_"
+const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 // Generate a random string of length n
 // example usage: ez.Randomchar(10)
