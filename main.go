@@ -6,13 +6,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
-	"sync"
-	"io"
 	"reflect"
+	"strconv"
+	"sync"
 	"time"
+
 	"github.com/bytedance/gopkg/lang/fastrand"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -20,28 +22,27 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"golang.org/x/crypto/bcrypt"
-	"unsafe"
 )
 
 var (
-	_ = bytes.Buffer{}
-	_ = fmt.Sprintf("")
-	_ = ioutil.ReadFile
-	_ = http.Client{}
-	_ = json.Marshal
-	_ = fastrand.Uint32()
-	_ = bcrypt.GenerateFromPassword
-	_ = os.Getenv("")
-	_ = sync.Mutex{}
-	_ = bufio.NewReader
-	_ = sync.Pool{}
-	_ = io.Copy
-	_ = bson.M{}
-	_ = primitive.ObjectID{}
-	_ = mongo.Client{}
-	_ = options.ClientOptions{}
-	_ = readpref.Primary()
-	_ = context.TODO()
+	_      = bytes.Buffer{}
+	_      = fmt.Sprintf("")
+	_      = ioutil.ReadFile
+	_      = http.Client{}
+	_      = json.Marshal
+	_      = fastrand.Uint32()
+	_      = bcrypt.GenerateFromPassword
+	_      = os.Getenv("")
+	_      = sync.Mutex{}
+	_      = bufio.NewReader
+	_      = sync.Pool{}
+	_      = io.Copy
+	_      = bson.M{}
+	_      = primitive.ObjectID{}
+	_      = mongo.Client{}
+	_      = options.ClientOptions{}
+	_      = readpref.Primary()
+	_      = context.TODO()
 	client = &http.Client{}
 )
 
@@ -57,10 +58,8 @@ var readerPool = sync.Pool{
 	},
 }
 
-
 type Nbsond = bson.D
 type Nbsonm = bson.M
-
 
 var MongoClient *mongo.Client
 var clientLock sync.Mutex
@@ -68,7 +67,7 @@ var once sync.Once
 
 // Convert string to int
 // example usage: ez.Toint("123")
-func Toint(s string) (int) {
+func Toint(s string) int {
 	var n int
 	for i := 0; i < len(s); i++ {
 		n = n*10 + int(s[i]-'0')
@@ -78,7 +77,7 @@ func Toint(s string) (int) {
 
 // Convert string to int64
 // example usage: ez.Toint64("123")
-func Toint64(s string) (int64) {
+func Toint64(s string) int64 {
 	var n int64
 	for i := 0; i < len(s); i++ {
 		n = n*10 + int64(s[i]-'0')
@@ -100,7 +99,6 @@ func Inttostring[T interface {
 		return ""
 	}
 }
-
 
 var Memorizecachemap sync.Map
 
@@ -182,7 +180,7 @@ func Memo0e[R1, R2 any](fn func() (R1, R2)) (R1, R2) {
 }
 
 // Memoize a function with 1 argument and 1 return value
-// Has a cache time of 6 seconds 
+// Has a cache time of 6 seconds
 // example usage: temp := ez.Memo1(funchere, arg1)
 func Memo1[A comparable, R any](fn func(A) R, arg A) R {
 	key := fmt.Sprintf("%p|%v", fn, arg)
@@ -208,7 +206,6 @@ func Memo1[A comparable, R any](fn func(A) R, arg A) R {
 	cacheMu.Unlock()
 	return res
 }
-
 
 // Memoize a function with 1 argument and 2 return values
 // Has a cache time of 6 seconds
@@ -349,7 +346,6 @@ func Memo3e[A, B, C comparable, R1, R2 any](fn func(A, B, C) (R1, R2), a A, b B,
 	cacheMu.Unlock()
 	return v1, v2
 }
-
 
 // Memoize a function with 4 arguments and 1 return value
 // Has a cache time of 6 seconds
@@ -661,7 +657,7 @@ func IsMongoConnected(client *mongo.Client) bool {
 }
 
 // Check if a MongoDB database exists
-// example usage: checker, err := ez.Mongoexists(client, "mydb") 
+// example usage: checker, err := ez.Mongoexists(client, "mydb")
 // returns true if the database exists, false otherwise
 func Mongoexists(client *mongo.Client, dbName string) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -709,6 +705,7 @@ func Mongocreatedb(client *mongo.Client, dbName string) (bool, error) {
 	}
 	return true, nil
 }
+
 // Drop a MongoDB database
 // example usage: err := ez.Mongodropdb(client, "mydb")
 // returns an error if the database could not be dropped
@@ -723,7 +720,7 @@ func Mongodropdb(client *mongo.Client, dbName string) error {
 	return nil
 }
 
-func Mongocreateindex(client *mongo.Client, dbName, collectionName, field string) (error) {
+func Mongocreateindex(client *mongo.Client, dbName, collectionName, field string) error {
 	collection := client.Database(dbName).Collection(collectionName)
 
 	indexModel := mongo.IndexModel{
@@ -742,7 +739,7 @@ func Mongocreateindex(client *mongo.Client, dbName, collectionName, field string
 //
 // example usage: ez.Mongoupdate_one(client, "mydb", "mycollection", bson.D{{"name", "John"}}, bson.D{{"$set", bson.D{{"name", "Doe"}}}})
 func Mongoupdate_one(client *mongo.Client, mydb string, mycollection string, filter bson.D, update bson.D) error {
-	ctx , cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	collection := client.Database(mydb).Collection(mycollection)
 	_, err := collection.UpdateOne(ctx, filter, update)
@@ -756,7 +753,7 @@ func Mongoupdate_one(client *mongo.Client, mydb string, mycollection string, fil
 //
 // example usage: ez.Mongoupdate_many(client, "mydb", "mycollection", bson.D{{"name", "John"}}, bson.D{{"$set", bson.D{{"name", "Doe"}}}})
 func Mongoupdate_many(client *mongo.Client, mydb string, mycollection string, filter bson.D, update bson.D) error {
-	ctx , cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	collection := client.Database(mydb).Collection(mycollection)
 	_, err := collection.UpdateMany(ctx, filter, update)
@@ -770,7 +767,7 @@ func Mongoupdate_many(client *mongo.Client, mydb string, mycollection string, fi
 //
 // example usage: ez.Mongofind_one(client, "mydb", "mycollection", bson.D{{"name", "John"}})
 func Mongofind_one(client *mongo.Client, mydb string, mycollection string, filter bson.D) (map[string]interface{}, error) {
-	ctx , cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	collection := client.Database(mydb).Collection(mycollection)
 	var result map[string]interface{}
@@ -785,7 +782,7 @@ func Mongofind_one(client *mongo.Client, mydb string, mycollection string, filte
 //
 // example usage: ez.Mongofind_many(client, "mydb", "mycollection", bson.D{{"name", "John"}})
 func Mongofind_many(client *mongo.Client, mydb string, mycollection string, filter bson.D) ([]map[string]interface{}, error) {
-	ctx , cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	collection := client.Database(mydb).Collection(mycollection)
 	cur, err := collection.Find(ctx, filter)
@@ -810,7 +807,7 @@ func Mongofind_many(client *mongo.Client, mydb string, mycollection string, filt
 //
 // example usage: ez.Mongodel_one(client, "mydb", "mycollection", bson.D{{"name", "John"}})
 func Mongodel_one(client *mongo.Client, mydb string, mycollection string, filter bson.D) error {
-	ctx , cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	collection := client.Database(mydb).Collection(mycollection)
 	_, err := collection.DeleteOne(ctx, filter)
@@ -824,7 +821,7 @@ func Mongodel_one(client *mongo.Client, mydb string, mycollection string, filter
 //
 // example usage: ez.Mongodel_many(client, "mydb", "mycollection", bson.D{{Key: "name", Value:"John"}})
 func Mongodel_many(client *mongo.Client, mydb string, mycollection string, filter bson.D) error {
-	ctx , cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	collection := client.Database(mydb).Collection(mycollection)
 	_, err := collection.DeleteMany(ctx, filter)
@@ -834,7 +831,7 @@ func Mongodel_many(client *mongo.Client, mydb string, mycollection string, filte
 	return nil
 }
 
-//Mongo insert one document into a collection
+// Mongo insert one document into a collection
 //
 // example usage: ez.Mongoinsert_one(client, "mydb", "mycollection", map[string]interface{}{"name": "John"})
 func Mongoinsert_one(client *mongo.Client, mydb string, mycollection string, document interface{}) error {
@@ -844,7 +841,6 @@ func Mongoinsert_one(client *mongo.Client, mydb string, mycollection string, doc
 	_, err := collection.InsertOne(ctx, document)
 	return err
 }
-
 
 // hash a string
 //
@@ -1032,7 +1028,6 @@ func addHeaders(req *http.Request, headers map[string]string) {
 	}
 }
 
-
 func executeRequest(req *http.Request) (string, error) {
 	const maxRetries = 2
 	client := &http.Client{Timeout: 10 * time.Second}
@@ -1083,7 +1078,6 @@ func executeRequestmore(req *http.Request) (*http.Response, error) {
 	return nil, fmt.Errorf("unexpected error: all retries failed")
 }
 
-
 func ParseJson(body string) (map[string]interface{}, error) {
 	var result map[string]interface{}
 	err := json.Unmarshal([]byte(body), &result)
@@ -1092,7 +1086,6 @@ func ParseJson(body string) (map[string]interface{}, error) {
 	}
 	return result, nil
 }
-
 
 // Get request
 //
