@@ -67,22 +67,22 @@ var once sync.Once
 
 // Convert string to int
 // example usage: ez.Toint("123")
-func Toint(s string) int {
+func Toint(s string) (int, error) {
 	var n int
 	for i := 0; i < len(s); i++ {
 		n = n*10 + int(s[i]-'0')
 	}
-	return n
+	return n, nil
 }
 
 // Convert string to int64
 // example usage: ez.Toint64("123")
-func Toint64(s string) int64 {
+func Toint64(s string) (int64, error) {
 	var n int64
 	for i := 0; i < len(s); i++ {
 		n = n*10 + int64(s[i]-'0')
 	}
-	return n
+	return n, nil
 }
 
 // Convert any int to string
