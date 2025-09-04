@@ -64,15 +64,56 @@ type Nbsonm = bson.M
 var MongoClient *mongo.Client
 var clientLock sync.Mutex
 var once sync.Once
+var bigSmalls string
+
+func init() {
+	max := 2000000
+	digitsPerNum := 7
+	buf := make([]byte, max*digitsPerNum)
+	for i := 0; i < max; i++ {
+		offset := i * digitsPerNum
+		n := i
+		buf[offset+6] = '0' + byte(n%10)
+		n /= 10
+		buf[offset+5] = '0' + byte(n%10)
+		n /= 10
+		buf[offset+4] = '0' + byte(n%10)
+		n /= 10
+		buf[offset+3] = '0' + byte(n%10)
+		n /= 10
+		buf[offset+2] = '0' + byte(n%10)
+		n /= 10
+		buf[offset+1] = '0' + byte(n%10)
+		n /= 10
+		buf[offset] = '0' + byte(n%10)
+	}
+	bigSmalls = string(buf)
+}
 
 // Convert string to int
 // example usage: ez.Toint("123")
 func Toint(s string) (int, error) {
-	var n int
-	for i := 0; i < len(s); i++ {
-		n = n*10 + int(s[i]-'0')
+	l := len(s)
+	if l == 1 {
+		return int(s[0] - '0'), nil
+	} else if l == 2 {
+		return int(s[0]-'0')*10 + int(s[1]-'0'), nil
+	} else if l == 3 {
+		return int(s[0]-'0')*100 + int(s[1]-'0')*10 + int(s[2]-'0'), nil
+	} else if l == 4 {
+		return (int(s[0]-'0')*10+int(s[1]-'0'))*100 + int(s[2]-'0')*10 + int(s[3]-'0'), nil
+	} else if l == 5 {
+		return (int(s[0]-'0')*10+int(s[1]-'0'))*1000 + (int(s[2]-'0')*10+int(s[3]-'0'))*10 + int(s[4]-'0'), nil
+	} else if l == 6 {
+		return (int(s[0]-'0')*10+int(s[1]-'0'))*10000 + (int(s[2]-'0')*10+int(s[3]-'0'))*100 + int(s[4]-'0')*10 + int(s[5]-'0'), nil
+	} else if l == 7 {
+		return (int(s[0]-'0')*10+int(s[1]-'0'))*100000 + (int(s[2]-'0')*10+int(s[3]-'0'))*1000 + (int(s[4]-'0')*10+int(s[5]-'0'))*10 + int(s[6]-'0'), nil
+	} else if l == 8 {
+		return (int(s[0]-'0')*10+int(s[1]-'0'))*1000000 + (int(s[2]-'0')*10+int(s[3]-'0'))*10000 + (int(s[4]-'0')*10+int(s[5]-'0'))*100 + int(s[6]-'0')*10 + int(s[7]-'0'), nil
+	} else {
+		n, _ := strconv.Atoi(s)
+		return n, nil
 	}
-	return n, nil
 }
 
 // Convert string to int64
@@ -86,19 +127,88 @@ func Toint64(s string) (int64, error) {
 }
 
 // Convert any int to string
-// example usage: mystring := ez.Inttostring(123)
-func Inttostring[T interface {
-	int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64
-}](n T) string {
-	switch any(n).(type) {
-	case int, int8, int16, int32, int64:
-		return strconv.FormatInt(int64(n), 10)
-	case uint, uint8, uint16, uint32, uint64:
-		return strconv.FormatUint(uint64(n), 10)
-	default:
-		return ""
+// example usage: mystring := ez.Inttostring(int64(123))
+func Inttostring(i int64) string {
+	base = 10
+	if 0 <= i && i < 9000000 && base == 10 {
+		return customSmall(int(i))
 	}
+	_, s := customFormatBits(nil, uint64(i), base, i < 0, false)
+	return s
 }
+
+func customSmall(i int) string {
+	s := bigSmalls[i*7 : i*7+7]
+	if s[0] != '0' {
+		return s
+	}
+	if s[1] != '0' {
+		return s[1:]
+	}
+	if s[2] != '0' {
+		return s[2:]
+	}
+	if s[3] != '0' {
+		return s[3:]
+	}
+	if s[4] != '0' {
+		return s[4:]
+	}
+	if s[5] != '0' {
+		return s[5:]
+	}
+	return s[6:]
+}
+
+const digits = "0123456789abcdefghijklmnopqrstuvwxyz"
+
+const host32bit = ^uint(0)>>32 == 0
+
+func customFormatBits(dst []byte, u uint64, base int, neg, append_ bool) ([]byte, string) {
+	if base < 2 || base > len(digits) {
+		panic("strconv: illegal AppendInt/FormatInt base")
+	}
+	var a [64 + 1]byte
+	i := len(a)
+	if neg {
+		u = -u
+	}
+	if base == 10 {
+		for u >= 10 {
+			i--
+			a[i] = digits[u%10]
+			u /= 10
+		}
+	} else if host32bit && base == 16 {
+		var d byte = '0'
+		if base > 10 {
+			d = 'a' - 10
+		}
+		for u != 0 {
+			i--
+			a[i] = byte(u&0xf) + d
+			u >>= 4
+		}
+	} else {
+		b := uint64(base)
+		for u >= b {
+			i--
+			a[i] = digits[u%b]
+			u /= b
+		}
+	}
+	i--
+	a[i] = digits[u]
+	if neg {
+		i--
+		a[i] = '-'
+	}
+	if append_ {
+		return append(dst, a[i:]...), ""
+	}
+	return nil, string(a[i:])
+}
+
 
 var Memorizecachemap sync.Map
 
