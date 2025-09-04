@@ -735,7 +735,7 @@ func GetMongoClient(URI string) *mongo.Client {
 			MongoClient, err = connectToMongo(URI)
 			if err != nil {
 				fmt.Println("Failed to connect to MongoDB: %v", err)
-				return nil
+				return
 			}
 		})
 		if !IsMongoConnected(MongoClient) {
