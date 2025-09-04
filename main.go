@@ -129,7 +129,7 @@ func Toint64(s string) (int64, error) {
 // Convert any int to string
 // example usage: mystring := ez.Inttostring(int64(123))
 func Inttostring(i int64) string {
-	base = 10
+	base := 10
 	if 0 <= i && i < 9000000 && base == 10 {
 		return customSmall(int(i))
 	}
