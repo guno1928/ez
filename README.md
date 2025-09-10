@@ -20,7 +20,7 @@ docs at https://alos.gg/docs
 
 # Contribute
 
-discord.gg/alos is my discord or add me ogxertz happy to add anything in
+alos.gg/discord is my discord or add me ogxertz happy to add anything in
 
 
 # License
