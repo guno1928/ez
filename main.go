@@ -1546,3 +1546,144 @@ func TraceJson(url string, headers map[string]string) (map[string]interface{}, e
 	}
 	return ParseJson(Body)
 }
+
+type SafeMap struct {
+	buckets []map[string]*entry
+	mutexes []sync.RWMutex
+	size    atomic.Uint32
+	janitor *janitor
+}
+
+type entry struct {
+	value      interface{}
+	expire     time.Time
+	getcounter atomic.Uint32
+}
+
+type janitor struct {
+	interval time.Duration
+	stop     chan bool
+}
+
+// NewSafeMap creates a new SafeMap with the specified initial size.
+// The size parameter is used to determine the initial capacity of each bucket.
+//example usage: m := ez.NewSafeMap(64)
+func NewSafeMap(size int) *SafeMap {
+	const numBuckets = 1200
+	m := &SafeMap{
+		buckets: make([]map[string]*entry, numBuckets),
+		mutexes: make([]sync.RWMutex, numBuckets),
+	}
+	initialCap := size/numBuckets + 1
+	for i := range m.buckets {
+		m.buckets[i] = make(map[string]*entry, initialCap)
+	}
+	runJanitor(m, 15*time.Second)
+	runtime.SetFinalizer(m, stopJanitor)
+	return m
+}
+
+func runJanitor(m *SafeMap, ci time.Duration) {
+	j := &janitor{
+		interval: ci,
+		stop:     make(chan bool),
+	}
+	m.janitor = j
+	go j.Run(m)
+}
+
+func (j *janitor) Run(m *SafeMap) {
+	ticker := time.NewTicker(j.interval)
+	for {
+		select {
+		case <-ticker.C:
+			m.CleanExpired()
+		case <-j.stop:
+			ticker.Stop()
+			return
+		}
+	}
+}
+
+func stopJanitor(m *SafeMap) {
+	m.janitor.stop <- true
+}
+
+func (m *SafeMap) getShardIndex(key string) int {
+	h := fnv.New64a()
+	h.Write([]byte(key))
+	return int(h.Sum64() % uint64(len(m.buckets)))
+}
+
+// Insert a key-value pair into the SafeMap with an optional TTL and get counter.
+// 
+// example usage: m.Insert("key", 5, "value") // Insert with get counter of 5 and no expiration the counter is how many times the key can be accessed before being deleted
+func (m *SafeMap) Insert(key string, counter uint32, value interface{}) {
+	m.InsertWithTTL(key, 0, counter, value)
+}
+
+// InsertWithTTL inserts a key-value pair into the SafeMap with a specified TTL and get counter.
+//
+// example usage: m.InsertWithTTL("key", 10*time.Second, 5, "value") // Insert with TTL of 10 seconds and get counter of 5 the counter is how many times the key can be accessed before being deleted
+func (m *SafeMap) InsertWithTTL(key string, ttl time.Duration, counter uint32, value interface{}) {
+	idx := m.getShardIndex(key)
+	m.mutexes[idx].Lock()
+	defer m.mutexes[idx].Unlock()
+	expire := time.Time{}
+	if ttl > 0 {
+		expire = time.Now().Add(ttl)
+	}
+	e := &entry{value: value, expire: expire, getcounter: atomic.Uint32{}}
+	e.getcounter.Store(counter)
+	if _, exists := m.buckets[idx][key]; !exists {
+		m.size.Add(1)
+	}
+	m.buckets[idx][key] = e
+}
+
+// Get retrieves the value associated with the given key from the SafeMap.
+// example usage: value, exists := m.Get("key")
+func (m *SafeMap) Get(key string) (interface{}, bool) {
+	idx := m.getShardIndex(key)
+	m.mutexes[idx].RLock()
+	defer m.mutexes[idx].RUnlock()
+	e, exists := m.buckets[idx][key]
+	if !exists {
+		return nil, false
+	}
+	if e.getcounter.Load() == 1 {
+		delete(m.buckets[idx], key)
+		m.size.Add(^uint32(0))
+		return nil, false
+	} else if e.getcounter.Load() > 1 {
+		e.getcounter.Add(^uint32(0))
+	}
+	value := e.value
+	return value, true
+}
+
+// Delete removes the key-value pair associated with the given key from the SafeMap.
+// example usage: m.Delete("key")
+func (m *SafeMap) Delete(key string) {
+	idx := m.getShardIndex(key)
+	m.mutexes[idx].Lock()
+	defer m.mutexes[idx].Unlock()
+	if _, exists := m.buckets[idx][key]; exists {
+		delete(m.buckets[idx], key)
+		m.size.Add(^uint32(0))
+	}
+}
+
+//force a cleanup but this does auto cleanup every 15 seconds
+func (m *SafeMap) CleanExpired() {
+	for i := 0; i < len(m.buckets); i++ {
+		m.mutexes[i].Lock()
+		for key, e := range m.buckets[i] {
+			if !e.expire.IsZero() && time.Now().After(e.expire) {
+				delete(m.buckets[i], key)
+				m.size.Add(^uint32(0))
+			}
+		}
+		m.mutexes[i].Unlock()
+	}
+}
