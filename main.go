@@ -6,13 +6,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"hash/fnv"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"reflect"
+	"runtime"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/bytedance/gopkg/lang/fastrand"
@@ -208,7 +211,6 @@ func customFormatBits(dst []byte, u uint64, base int, neg, append_ bool) ([]byte
 	}
 	return nil, string(a[i:])
 }
-
 
 var Memorizecachemap sync.Map
 
@@ -1567,7 +1569,7 @@ type janitor struct {
 
 // NewSafeMap creates a new SafeMap with the specified initial size.
 // The size parameter is used to determine the initial capacity of each bucket.
-//example usage: m := ez.NewSafeMap(64)
+// example usage: m := ez.NewSafeMap(64)
 func NewSafeMap(size int) *SafeMap {
 	const numBuckets = 1200
 	m := &SafeMap{
@@ -1616,7 +1618,7 @@ func (m *SafeMap) getShardIndex(key string) int {
 }
 
 // Insert a key-value pair into the SafeMap with an optional TTL and get counter.
-// 
+//
 // example usage: m.Insert("key", 5, "value") // Insert with get counter of 5 and no expiration the counter is how many times the key can be accessed before being deleted
 func (m *SafeMap) Insert(key string, counter uint32, value interface{}) {
 	m.InsertWithTTL(key, 0, counter, value)
@@ -1674,7 +1676,7 @@ func (m *SafeMap) Delete(key string) {
 	}
 }
 
-//force a cleanup but this does auto cleanup every 15 seconds
+// force a cleanup but this does auto cleanup every 15 seconds
 func (m *SafeMap) CleanExpired() {
 	for i := 0; i < len(m.buckets); i++ {
 		m.mutexes[i].Lock()
