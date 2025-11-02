@@ -1617,75 +1617,143 @@ func (m *SafeMap) getShardIndex(key string) int {
 	return int(h.Sum64() % uint64(len(m.buckets)))
 }
 
-// Insert a key-value pair into the SafeMap with an optional TTL and get counter.
-//
-// example usage: m.Insert("key", 5, "value") // Insert with get counter of 5 and no expiration the counter is how many times the key can be accessed before being deleted
+type SafeMap struct {
+	shards  []*sync.Map
+	size    atomic.Uint32
+	janitor *janitor
+}
+
+type entry struct {
+	value      interface{}
+	expire     time.Time
+	getcounter atomic.Uint32
+}
+
+type janitor struct {
+	interval time.Duration
+	stop     chan bool
+}
+
+func NewSafeMap(size int) *SafeMap {
+	m := &SafeMap{
+		shards: make([]*sync.Map, size),
+	}
+
+	fmt.Println(len(m.shards), "shards created for SafeMap with approximate size:", size)
+	for i := range m.shards {
+		m.shards[i] = &sync.Map{}
+	}
+
+	runJanitor(m, 30*time.Second)
+	runtime.SetFinalizer(m, stopJanitor)
+	return m
+}
+
+func runJanitor(m *SafeMap, ci time.Duration) {
+	j := &janitor{
+		interval: ci,
+		stop:     make(chan bool),
+	}
+	m.janitor = j
+	go j.Run(m)
+}
+
+func (j *janitor) Run(m *SafeMap) {
+	ticker := time.NewTicker(j.interval)
+	for {
+		select {
+		case <-ticker.C:
+			m.CleanExpired()
+		case <-j.stop:
+			ticker.Stop()
+			return
+		}
+	}
+}
+
+func stopJanitor(m *SafeMap) {
+	m.janitor.stop <- true
+}
+
+func (m *SafeMap) getShardIndex(key string) int {
+	h := fnv.New64a()
+	h.Write([]byte(key))
+	return int(h.Sum64() % uint64(len(m.shards)))
+}
+
+
+// Insert adds a key-value pair to the SafeMap with a specified access counter.
+// The value will be removed after the counter reaches zero.
+// This method does not set an expiration time.
+// example usage: m.Insert("mykey", 3, "myvalue")
 func (m *SafeMap) Insert(key string, counter uint32, value interface{}) {
 	m.InsertWithTTL(key, 0, counter, value)
 }
 
-// InsertWithTTL inserts a key-value pair into the SafeMap with a specified TTL and get counter.
-//
-// example usage: m.InsertWithTTL("key", 10*time.Second, 5, "value") // Insert with TTL of 10 seconds and get counter of 5 the counter is how many times the key can be accessed before being deleted
+
+// InsertWithTTL adds a key-value pair to the SafeMap with a specified access counter and time-to-live (TTL).
+// The value will expire after the given TTL or after the counter reaches zero, whichever comes first.
+// example usage: m.InsertWithTTL("mykey", 10*time.Second, 3, "myvalue")
 func (m *SafeMap) InsertWithTTL(key string, ttl time.Duration, counter uint32, value interface{}) {
-	idx := m.getShardIndex(key)
-	m.mutexes[idx].Lock()
-	defer m.mutexes[idx].Unlock()
-	expire := time.Time{}
-	if ttl > 0 {
-		expire = time.Now().Add(ttl)
-	}
-	e := &entry{value: value, expire: expire, getcounter: atomic.Uint32{}}
-	e.getcounter.Store(counter)
-	if _, exists := m.buckets[idx][key]; !exists {
-		m.size.Add(1)
-	}
-	m.buckets[idx][key] = e
+       idx := m.getShardIndex(key)
+       expire := time.Time{}
+       if ttl > 0 {
+	       expire = time.Now().Add(ttl)
+       }
+       e := &entry{value: value, expire: expire, getcounter: atomic.Uint32{}}
+       e.getcounter.Store(counter)
+
+       if _, exists := m.shards[idx].Load(key); !exists {
+	       m.size.Add(1)
+       }
+
+       m.shards[idx].Store(key, e)
 }
+
 
 // Get retrieves the value associated with the given key from the SafeMap.
-// example usage: value, exists := m.Get("key")
+// If the access counter reaches zero, the key is deleted and (nil, false) is returned.
+// Returns the value and true if found, otherwise (nil, false).
+// example usage: val, ok := m.Get("mykey")
 func (m *SafeMap) Get(key string) (interface{}, bool) {
-	idx := m.getShardIndex(key)
-	m.mutexes[idx].RLock()
-	defer m.mutexes[idx].RUnlock()
-	e, exists := m.buckets[idx][key]
-	if !exists {
-		return nil, false
-	}
-	if e.getcounter.Load() == 1 {
-		delete(m.buckets[idx], key)
-		m.size.Add(^uint32(0))
-		return nil, false
-	} else if e.getcounter.Load() > 1 {
-		e.getcounter.Add(^uint32(0))
-	}
-	value := e.value
-	return value, true
+       idx := m.getShardIndex(key)
+       value, exists := m.shards[idx].Load(key)
+       if !exists {
+	       return nil, false
+       }
+
+       e := value.(*entry)
+       if e.getcounter.Load() == 1 {
+	       m.shards[idx].Delete(key)
+	       m.size.Add(^uint32(0))
+	       return nil, false
+       } else if e.getcounter.Load() > 1 {
+	       e.getcounter.Add(^uint32(0))
+       }
+
+       return e.value, true
 }
 
-// Delete removes the key-value pair associated with the given key from the SafeMap.
-// example usage: m.Delete("key")
+
+// Delete removes the key and its value from the SafeMap if it exists.
+// example usage: m.Delete("mykey")
 func (m *SafeMap) Delete(key string) {
 	idx := m.getShardIndex(key)
-	m.mutexes[idx].Lock()
-	defer m.mutexes[idx].Unlock()
-	if _, exists := m.buckets[idx][key]; exists {
-		delete(m.buckets[idx], key)
-		m.size.Add(^uint32(0))
+	if _, exists := m.shards[idx].LoadAndDelete(key); exists {
+		m.size.Add(^uint32(0)) 
 	}
 }
 
-// force a cleanup but this does auto cleanup every 15 seconds
 func (m *SafeMap) CleanExpired() {
-	for i := 0; i < len(m.buckets); i++ {
-		m.mutexes[i].Lock()
-		for key, e := range m.buckets[i] {
-			if !e.expire.IsZero() && time.Now().After(e.expire) {
-				delete(m.buckets[i], key)
-				m.size.Add(^uint32(0))
+	now := time.Now()
+	for i := 0; i < len(m.shards); i++ {
+		m.shards[i].Range(func(key, value interface{}) bool {
+			e := value.(*entry)
+			if !e.expire.IsZero() && now.After(e.expire) {
+				m.shards[i].Delete(key)
+				m.size.Add(^uint32(0)) 
 			}
-		}
-		m.mutexes[i].Unlock()
+			return true 
+		})
 	}
 }
