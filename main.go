@@ -1566,6 +1566,12 @@ type janitor struct {
 	stop     chan bool
 }
 
+func copyString(s string) string {
+	b := make([]byte, len(s))
+	copy(b, s)
+	return *(*string)(unsafe.Pointer(&b))
+}
+
 func NewSafeMap(size int) *SafeMap {
 	m := &SafeMap{
 		shards: make([]*sync.Map, size),
@@ -1627,6 +1633,10 @@ func (m *SafeMap) Insert(key string, counter uint32, value interface{}) {
 // The value will expire after the given TTL or after the counter reaches zero, whichever comes first.
 // example usage: m.InsertWithTTL("mykey", 10*time.Second, 3, "myvalue")
 func (m *SafeMap) InsertWithTTL(key string, ttl time.Duration, counter uint32, value interface{}) {
+		key = copyString(key)
+		if s, ok := value.(string); ok {
+			value = copyString(s)
+		}
        idx := m.getShardIndex(key)
        expire := time.Time{}
        if ttl > 0 {
